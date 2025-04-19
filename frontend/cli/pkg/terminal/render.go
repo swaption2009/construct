@@ -2,13 +2,11 @@ package terminal
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 	"slices"
-	"strings"
 
 	"connectrpc.com/connect"
-	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -17,15 +15,12 @@ import (
 )
 
 type model struct {
-	viewport  viewport.Model
-	textInput textinput.Model
+	viewport viewport.Model
+	input    textarea.Model
+	spinner  spinner.Model
 
 	width  int
 	height int
-
-	// waiting             bool
-	// typingMessage       *message
-	// typingAnimationDone bool
 
 	apiClient   *api_client.Client
 	messages    []message
@@ -37,53 +32,61 @@ type model struct {
 	ctx          context.Context
 }
 
-func NewModel(ctx context.Context, apiClient *api_client.Client, task *v1.Task) model {
-	ti := textinput.New()
-	ti.Placeholder = "What do you want to build?"
-	ti.Focus()
-	ti.CharLimit = 512
-	ti.Width = 80
+func NewModel(ctx context.Context, apiClient *api_client.Client, task *v1.Task, agent *v1.Agent) *model {
+	ta := textarea.New()
+	ta.Focus()
+	ta.CharLimit = 32768
+	// ti.Prompt = fmt.Sprintf("[%s] > ", agent.Metadata.Name)
+	ta.ShowLineNumbers = false
+	ta.SetHeight(1)
+	// ta.SetWidth(80)
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+	ta.Prompt = ""
 
 	vp := viewport.New(80, 20)
 	vp.SetContent("")
 
-	return model{
-		apiClient: apiClient,
-		textInput: ti,
-		viewport:  vp,
-		messages:  []message{},
-		// waiting:       false,
-		activeAgent: *task.Spec.AgentId,
-		task:        task,
+	sp := spinner.New()
+	sp.Spinner = spinner.Dot
+
+	return &model{
+		width:        80,
+		height:       20,
+		input:        ta,
+		viewport:     vp,
+		spinner:      sp,
+		apiClient:    apiClient,
+		messages:     []message{},
+		activeAgent:  agent.Metadata.Name,
+		task:         task,
 		eventChannel: make(chan *v1.SubscribeResponse, 100),
 		ctx:          ctx,
-		// typingMessage: nil,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	return tea.Batch(
 		tea.EnterAltScreen,
-		func() tea.Msg {
-			return tea.WindowSizeMsg{
-				Width:  80,
-				Height: 24,
-			}
-		},
-		eventSubscriber(m.ctx, m.apiClient, m.eventChannel),
+		eventSubscriber(m.ctx, m.apiClient, m.eventChannel, m.task.Id),
 		eventBridge(m.eventChannel),
 	)
 }
 
-func eventSubscriber(ctx context.Context, client *api_client.Client, eventChannel chan<- *v1.SubscribeResponse) tea.Cmd {
+func eventSubscriber(ctx context.Context, client *api_client.Client, eventChannel chan<- *v1.SubscribeResponse, taskId string) tea.Cmd {
 	return func() tea.Msg {
-		sub, err := client.Message().Subscribe(ctx, &connect.Request[v1.SubscribeRequest]{})
+		sub, err := client.Message().Subscribe(ctx, &connect.Request[v1.SubscribeRequest]{
+			Msg: &v1.SubscribeRequest{
+				TaskId: taskId,
+			},
+		})
 		if err != nil {
-			slog.Error("failed to subscribe to messages", "error", err)
 			return nil
 		}
 		for sub.Receive() {
 			eventChannel <- sub.Msg()
+		}
+
+		if err := sub.Err(); err != nil {
 		}
 
 		return nil
@@ -97,12 +100,11 @@ func eventBridge(eventChannel <-chan *v1.SubscribeResponse) tea.Cmd {
 		case *v1.SubscribeResponse_MessageEvent:
 			return msg.GetMessageEvent()
 		}
-
 		return nil
 	}
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
 		cmds []tea.Cmd
@@ -111,19 +113,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC | tea.KeyEsc:
+		case tea.KeyCtrlC:
+			fallthrough
+		case tea.KeyEsc:
 			return m, tea.Quit
 		default:
-			cmds = append(cmds, m.handleKeyEvents(msg))
+			cmds = append(cmds, m.onKeyPressed(msg))
 		}
 	case tea.WindowSizeMsg:
-		cmds = append(cmds, m.handleWindowResizeEvent(msg))
+		m.onWindowResize(msg)
 
 	case *v1.Message:
 		m.messages = append(m.messages, &userMessage{content: msg.Content.GetText()})
+		m.updateViewportContent()
 	}
 
-	m.textInput, cmd = m.textInput.Update(msg)
+	m.input, cmd = m.input.Update(msg)
 	cmds = append(cmds, cmd)
 
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -132,12 +137,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m model) handleKeyEvents(msg tea.KeyMsg) tea.Cmd {
+func (m *model) onKeyPressed(msg tea.KeyMsg) tea.Cmd {
 	switch msg.Type {
 	case tea.KeyTab:
-		return m.handleToggleAgentsEvent()
+		return m.onToogleAgent()
 	case tea.KeyEnter:
-		return m.handleInputEvents(msg)
+		return m.onTextInput(msg)
 	}
 
 	switch msg.String() {
@@ -158,95 +163,63 @@ func (m model) handleKeyEvents(msg tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-func (m model) handleInputEvents(msg tea.KeyMsg) tea.Cmd {
-	if m.textInput.Value() != "" {
-		userInput := m.textInput.Value()
-		m.textInput.Reset()
+func (m *model) onTextInput(msg tea.KeyMsg) tea.Cmd {
+	if m.input.Value() != "" {
+		userInput := m.input.Value()
+		m.input.Reset()
 
-		m.apiClient.Message().CreateMessage(context.Background(), &connect.Request[v1.CreateMessageRequest]{
+		_, err := m.apiClient.Message().CreateMessage(context.Background(), &connect.Request[v1.CreateMessageRequest]{
 			Msg: &v1.CreateMessageRequest{
+				TaskId:  m.task.Id,
 				Content: userInput,
 			},
 		})
+		if err != nil {
+		}
 	}
 
 	return nil
 }
 
-func (m model) handleToggleAgentsEvent() tea.Cmd {
+func (m *model) onToogleAgent() tea.Cmd {
+	if len(m.agents) == 0 {
+		return nil
+	}
 	idx := slices.Index(m.agents, m.activeAgent)
 	if idx == -1 {
 		idx = 0
-	}
-
-	if idx == len(m.agents)-1 {
-		idx = 0
 	} else {
-		idx++
+		idx = (idx + 1) % len(m.agents)
 	}
 
 	m.activeAgent = m.agents[idx]
 	return nil
 }
 
-func (m model) handleWindowResizeEvent(msg tea.WindowSizeMsg) tea.Cmd {
+func (m *model) onWindowResize(msg tea.WindowSizeMsg) {
 	m.width = msg.Width
 	m.height = msg.Height
 
-	// Adjust viewport and input field sizes
-	m.viewport.Width = msg.Width - 4   // Account for padding
-	m.viewport.Height = msg.Height - 6 // Leave room for input
-	m.textInput.Width = msg.Width - 4
-
-	// Update the separator width
-	separatorStyle = separatorStyle.Width(msg.Width - 4)
-
-	// Reformat content for new dimensions
 	m.updateViewportContent()
-	return nil
 }
 
-func (m model) View() string {
-	var sb strings.Builder
+func (m *model) View() string {
+	m.viewport.Width = Max(5, m.width-8)
+	m.viewport.Height = Max(5, m.height-4)
 
-	if m.height == 0 {
-		return "Loading..."
-	}
-	viewportHeight := m.height - 6
-
-	if m.viewport.Height != viewportHeight {
-		m.viewport.Height = viewportHeight
+	if len(m.input.Value()) > m.width-6 {
+		m.input.SetHeight(2)
 	}
 
-	title := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("205")).
-		Render("Construct")
-	sb.WriteString(title)
-	sb.WriteString("\n\n")
+	viewport := m.viewport.View()
+	textInput := inputStyle.Render(m.input.View())
+	footer := footerStyle.Render("\nTab: switch agent| PgUp/PgDown: scroll | Ctrl+C: quit")
 
-	sb.WriteString(m.viewport.View())
-	sb.WriteString("\n")
-
-	// if m.waiting {
-	// 	sb.WriteString(waitingStyle.Render("Construct is thinking..."))
-	// 	sb.WriteString("\n")
-	// }
-
-	separator := separatorStyle.Width(m.width - 4).String()
-	sb.WriteString(separator)
-	sb.WriteString("\n")
-
-	inputLabel := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
-		Render(fmt.Sprintf("[%s] ", m.activeAgent))
-	sb.WriteString(inputLabel)
-	sb.WriteString(inputStyle.Render(m.textInput.View()))
-
-	footer := "\nTab: enter plan mode | PgUp/PgDown: scroll | Ctrl+C: quit"
-	sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render(footer))
-
-	return appStyle.Render(sb.String())
+	return appStyle.Render(lipgloss.JoinVertical(lipgloss.Center,
+		viewport,
+		textInput),
+		footer,
+	)
 }
 
 func (m *model) updateViewportContent() {
