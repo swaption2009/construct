@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="construct-logo.png" alt="Construct Logo" width="600"
+  <img src="logo.png" alt="Construct Logo" width="600"
 </p>
 
 An API-first, multi-agent coding assistant designed for superior tool calling performance.
