@@ -66,6 +66,11 @@ func UpdateTime(v time.Time) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldUpdateTime, v))
 }
 
+// ProjectDirectory applies equality check predicate on the "project_directory" field. It's identical to ProjectDirectoryEQ.
+func ProjectDirectory(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldProjectDirectory, v))
+}
+
 // InputTokens applies equality check predicate on the "input_tokens" field. It's identical to InputTokensEQ.
 func InputTokens(v int64) predicate.Task {
 	return predicate.Task(sql.FieldEQ(FieldInputTokens, v))
@@ -174,6 +179,71 @@ func UpdateTimeLT(v time.Time) predicate.Task {
 // UpdateTimeLTE applies the LTE predicate on the "update_time" field.
 func UpdateTimeLTE(v time.Time) predicate.Task {
 	return predicate.Task(sql.FieldLTE(FieldUpdateTime, v))
+}
+
+// ProjectDirectoryEQ applies the EQ predicate on the "project_directory" field.
+func ProjectDirectoryEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldEQ(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryNEQ applies the NEQ predicate on the "project_directory" field.
+func ProjectDirectoryNEQ(v string) predicate.Task {
+	return predicate.Task(sql.FieldNEQ(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryIn applies the In predicate on the "project_directory" field.
+func ProjectDirectoryIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldIn(FieldProjectDirectory, vs...))
+}
+
+// ProjectDirectoryNotIn applies the NotIn predicate on the "project_directory" field.
+func ProjectDirectoryNotIn(vs ...string) predicate.Task {
+	return predicate.Task(sql.FieldNotIn(FieldProjectDirectory, vs...))
+}
+
+// ProjectDirectoryGT applies the GT predicate on the "project_directory" field.
+func ProjectDirectoryGT(v string) predicate.Task {
+	return predicate.Task(sql.FieldGT(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryGTE applies the GTE predicate on the "project_directory" field.
+func ProjectDirectoryGTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldGTE(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryLT applies the LT predicate on the "project_directory" field.
+func ProjectDirectoryLT(v string) predicate.Task {
+	return predicate.Task(sql.FieldLT(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryLTE applies the LTE predicate on the "project_directory" field.
+func ProjectDirectoryLTE(v string) predicate.Task {
+	return predicate.Task(sql.FieldLTE(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryContains applies the Contains predicate on the "project_directory" field.
+func ProjectDirectoryContains(v string) predicate.Task {
+	return predicate.Task(sql.FieldContains(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryHasPrefix applies the HasPrefix predicate on the "project_directory" field.
+func ProjectDirectoryHasPrefix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasPrefix(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryHasSuffix applies the HasSuffix predicate on the "project_directory" field.
+func ProjectDirectoryHasSuffix(v string) predicate.Task {
+	return predicate.Task(sql.FieldHasSuffix(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryEqualFold applies the EqualFold predicate on the "project_directory" field.
+func ProjectDirectoryEqualFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldEqualFold(FieldProjectDirectory, v))
+}
+
+// ProjectDirectoryContainsFold applies the ContainsFold predicate on the "project_directory" field.
+func ProjectDirectoryContainsFold(v string) predicate.Task {
+	return predicate.Task(sql.FieldContainsFold(FieldProjectDirectory, v))
 }
 
 // InputTokensEQ applies the EQ predicate on the "input_tokens" field.

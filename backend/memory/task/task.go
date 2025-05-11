@@ -19,6 +19,8 @@ const (
 	FieldCreateTime = "create_time"
 	// FieldUpdateTime holds the string denoting the update_time field in the database.
 	FieldUpdateTime = "update_time"
+	// FieldProjectDirectory holds the string denoting the project_directory field in the database.
+	FieldProjectDirectory = "project_directory"
 	// FieldInputTokens holds the string denoting the input_tokens field in the database.
 	FieldInputTokens = "input_tokens"
 	// FieldOutputTokens holds the string denoting the output_tokens field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldID,
 	FieldCreateTime,
 	FieldUpdateTime,
+	FieldProjectDirectory,
 	FieldInputTokens,
 	FieldOutputTokens,
 	FieldCacheWriteTokens,
@@ -83,6 +86,8 @@ var (
 	DefaultUpdateTime func() time.Time
 	// UpdateDefaultUpdateTime holds the default value on update for the "update_time" field.
 	UpdateDefaultUpdateTime func() time.Time
+	// ProjectDirectoryValidator is a validator for the "project_directory" field. It is called by the builders before save.
+	ProjectDirectoryValidator func(string) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -103,6 +108,11 @@ func ByCreateTime(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdateTime orders the results by the update_time field.
 func ByUpdateTime(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdateTime, opts...).ToFunc()
+}
+
+// ByProjectDirectory orders the results by the project_directory field.
+func ByProjectDirectory(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProjectDirectory, opts...).ToFunc()
 }
 
 // ByInputTokens orders the results by the input_tokens field.

@@ -123,6 +123,7 @@ var (
 		{Name: "id", Type: field.TypeUUID, Unique: true},
 		{Name: "create_time", Type: field.TypeTime},
 		{Name: "update_time", Type: field.TypeTime},
+		{Name: "project_directory", Type: field.TypeString},
 		{Name: "input_tokens", Type: field.TypeInt64, Nullable: true},
 		{Name: "output_tokens", Type: field.TypeInt64, Nullable: true},
 		{Name: "cache_write_tokens", Type: field.TypeInt64, Nullable: true},
@@ -138,7 +139,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tasks_agents_agent",
-				Columns:    []*schema.Column{TasksColumns[8]},
+				Columns:    []*schema.Column{TasksColumns[9]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

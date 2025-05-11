@@ -15,6 +15,7 @@ type Task struct {
 func (Task) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).Default(uuid.New).Unique().Immutable(),
+		field.String("project_directory").NotEmpty(),
 		field.Int64("input_tokens").Optional(),
 		field.Int64("output_tokens").Optional(),
 		field.Int64("cache_write_tokens").Optional(),

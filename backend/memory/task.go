@@ -23,6 +23,8 @@ type Task struct {
 	CreateTime time.Time `json:"create_time,omitempty"`
 	// UpdateTime holds the value of the "update_time" field.
 	UpdateTime time.Time `json:"update_time,omitempty"`
+	// ProjectDirectory holds the value of the "project_directory" field.
+	ProjectDirectory string `json:"project_directory,omitempty"`
 	// InputTokens holds the value of the "input_tokens" field.
 	InputTokens int64 `json:"input_tokens,omitempty"`
 	// OutputTokens holds the value of the "output_tokens" field.
@@ -81,6 +83,8 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case task.FieldInputTokens, task.FieldOutputTokens, task.FieldCacheWriteTokens, task.FieldCacheReadTokens:
 			values[i] = new(sql.NullInt64)
+		case task.FieldProjectDirectory:
+			values[i] = new(sql.NullString)
 		case task.FieldCreateTime, task.FieldUpdateTime:
 			values[i] = new(sql.NullTime)
 		case task.FieldID, task.FieldAgentID:
@@ -117,6 +121,12 @@ func (t *Task) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field update_time", values[i])
 			} else if value.Valid {
 				t.UpdateTime = value.Time
+			}
+		case task.FieldProjectDirectory:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field project_directory", values[i])
+			} else if value.Valid {
+				t.ProjectDirectory = value.String
 			}
 		case task.FieldInputTokens:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -205,6 +215,9 @@ func (t *Task) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("update_time=")
 	builder.WriteString(t.UpdateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("project_directory=")
+	builder.WriteString(t.ProjectDirectory)
 	builder.WriteString(", ")
 	builder.WriteString("input_tokens=")
 	builder.WriteString(fmt.Sprintf("%v", t.InputTokens))

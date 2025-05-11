@@ -4131,6 +4131,7 @@ type TaskMutation struct {
 	id                    *uuid.UUID
 	create_time           *time.Time
 	update_time           *time.Time
+	project_directory     *string
 	input_tokens          *int64
 	addinput_tokens       *int64
 	output_tokens         *int64
@@ -4326,6 +4327,42 @@ func (m *TaskMutation) OldUpdateTime(ctx context.Context) (v time.Time, err erro
 // ResetUpdateTime resets all changes to the "update_time" field.
 func (m *TaskMutation) ResetUpdateTime() {
 	m.update_time = nil
+}
+
+// SetProjectDirectory sets the "project_directory" field.
+func (m *TaskMutation) SetProjectDirectory(s string) {
+	m.project_directory = &s
+}
+
+// ProjectDirectory returns the value of the "project_directory" field in the mutation.
+func (m *TaskMutation) ProjectDirectory() (r string, exists bool) {
+	v := m.project_directory
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProjectDirectory returns the old "project_directory" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldProjectDirectory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProjectDirectory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProjectDirectory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProjectDirectory: %w", err)
+	}
+	return oldValue.ProjectDirectory, nil
+}
+
+// ResetProjectDirectory resets all changes to the "project_directory" field.
+func (m *TaskMutation) ResetProjectDirectory() {
+	m.project_directory = nil
 }
 
 // SetInputTokens sets the "input_tokens" field.
@@ -4842,12 +4879,15 @@ func (m *TaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TaskMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.create_time != nil {
 		fields = append(fields, task.FieldCreateTime)
 	}
 	if m.update_time != nil {
 		fields = append(fields, task.FieldUpdateTime)
+	}
+	if m.project_directory != nil {
+		fields = append(fields, task.FieldProjectDirectory)
 	}
 	if m.input_tokens != nil {
 		fields = append(fields, task.FieldInputTokens)
@@ -4879,6 +4919,8 @@ func (m *TaskMutation) Field(name string) (ent.Value, bool) {
 		return m.CreateTime()
 	case task.FieldUpdateTime:
 		return m.UpdateTime()
+	case task.FieldProjectDirectory:
+		return m.ProjectDirectory()
 	case task.FieldInputTokens:
 		return m.InputTokens()
 	case task.FieldOutputTokens:
@@ -4904,6 +4946,8 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldCreateTime(ctx)
 	case task.FieldUpdateTime:
 		return m.OldUpdateTime(ctx)
+	case task.FieldProjectDirectory:
+		return m.OldProjectDirectory(ctx)
 	case task.FieldInputTokens:
 		return m.OldInputTokens(ctx)
 	case task.FieldOutputTokens:
@@ -4938,6 +4982,13 @@ func (m *TaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdateTime(v)
+		return nil
+	case task.FieldProjectDirectory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProjectDirectory(v)
 		return nil
 	case task.FieldInputTokens:
 		v, ok := value.(int64)
@@ -5137,6 +5188,9 @@ func (m *TaskMutation) ResetField(name string) error {
 		return nil
 	case task.FieldUpdateTime:
 		m.ResetUpdateTime()
+		return nil
+	case task.FieldProjectDirectory:
+		m.ResetProjectDirectory()
 		return nil
 	case task.FieldInputTokens:
 		m.ResetInputTokens()

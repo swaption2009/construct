@@ -37,6 +37,20 @@ func (tu *TaskUpdate) SetUpdateTime(t time.Time) *TaskUpdate {
 	return tu
 }
 
+// SetProjectDirectory sets the "project_directory" field.
+func (tu *TaskUpdate) SetProjectDirectory(s string) *TaskUpdate {
+	tu.mutation.SetProjectDirectory(s)
+	return tu
+}
+
+// SetNillableProjectDirectory sets the "project_directory" field if the given value is not nil.
+func (tu *TaskUpdate) SetNillableProjectDirectory(s *string) *TaskUpdate {
+	if s != nil {
+		tu.SetProjectDirectory(*s)
+	}
+	return tu
+}
+
 // SetInputTokens sets the "input_tokens" field.
 func (tu *TaskUpdate) SetInputTokens(i int64) *TaskUpdate {
 	tu.mutation.ResetInputTokens()
@@ -280,7 +294,20 @@ func (tu *TaskUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *TaskUpdate) check() error {
+	if v, ok := tu.mutation.ProjectDirectory(); ok {
+		if err := task.ProjectDirectoryValidator(v); err != nil {
+			return &ValidationError{Name: "project_directory", err: fmt.Errorf(`memory: validator failed for field "Task.project_directory": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := tu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -291,6 +318,9 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := tu.mutation.UpdateTime(); ok {
 		_spec.SetField(task.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := tu.mutation.ProjectDirectory(); ok {
+		_spec.SetField(task.FieldProjectDirectory, field.TypeString, value)
 	}
 	if value, ok := tu.mutation.InputTokens(); ok {
 		_spec.SetField(task.FieldInputTokens, field.TypeInt64, value)
@@ -434,6 +464,20 @@ type TaskUpdateOne struct {
 // SetUpdateTime sets the "update_time" field.
 func (tuo *TaskUpdateOne) SetUpdateTime(t time.Time) *TaskUpdateOne {
 	tuo.mutation.SetUpdateTime(t)
+	return tuo
+}
+
+// SetProjectDirectory sets the "project_directory" field.
+func (tuo *TaskUpdateOne) SetProjectDirectory(s string) *TaskUpdateOne {
+	tuo.mutation.SetProjectDirectory(s)
+	return tuo
+}
+
+// SetNillableProjectDirectory sets the "project_directory" field if the given value is not nil.
+func (tuo *TaskUpdateOne) SetNillableProjectDirectory(s *string) *TaskUpdateOne {
+	if s != nil {
+		tuo.SetProjectDirectory(*s)
+	}
 	return tuo
 }
 
@@ -693,7 +737,20 @@ func (tuo *TaskUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tuo *TaskUpdateOne) check() error {
+	if v, ok := tuo.mutation.ProjectDirectory(); ok {
+		if err := task.ProjectDirectoryValidator(v); err != nil {
+			return &ValidationError{Name: "project_directory", err: fmt.Errorf(`memory: validator failed for field "Task.project_directory": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
+	if err := tuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {
@@ -721,6 +778,9 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	}
 	if value, ok := tuo.mutation.UpdateTime(); ok {
 		_spec.SetField(task.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := tuo.mutation.ProjectDirectory(); ok {
+		_spec.SetField(task.FieldProjectDirectory, field.TypeString, value)
 	}
 	if value, ok := tuo.mutation.InputTokens(); ok {
 		_spec.SetField(task.FieldInputTokens, field.TypeInt64, value)

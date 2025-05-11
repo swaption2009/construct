@@ -144,10 +144,11 @@ func (x *TaskMetadata) GetUpdatedAt() *timestamppb.Timestamp {
 }
 
 type TaskSpec struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AgentId       *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AgentId          *string                `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
+	ProjectDirectory string                 `protobuf:"bytes,2,opt,name=project_directory,json=projectDirectory,proto3" json:"project_directory,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *TaskSpec) Reset() {
@@ -183,6 +184,13 @@ func (*TaskSpec) Descriptor() ([]byte, []int) {
 func (x *TaskSpec) GetAgentId() string {
 	if x != nil && x.AgentId != nil {
 		return *x.AgentId
+	}
+	return ""
+}
+
+func (x *TaskSpec) GetProjectDirectory() string {
+	if x != nil {
+		return x.ProjectDirectory
 	}
 	return ""
 }
@@ -821,9 +829,10 @@ const file_construct_v1_task_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tcreatedAt\x12A\n" +
 	"\n" +
-	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tupdatedAt\"A\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tupdatedAt\"v\n" +
 	"\bTaskSpec\x12(\n" +
-	"\bagent_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\aagentId\x88\x01\x01B\v\n" +
+	"\bagent_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\aagentId\x88\x01\x01\x123\n" +
+	"\x11project_directory\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x10projectDirectoryB\v\n" +
 	"\t_agent_id\";\n" +
 	"\n" +
 	"TaskStatus\x12-\n" +

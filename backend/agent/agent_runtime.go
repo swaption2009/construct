@@ -210,7 +210,7 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		return err
 	}
 
-	err = rt.callTools(ctx, taskID, resp.Message.Content)
+	err = rt.callTools(ctx, task, resp.Message.Content)
 	if err != nil {
 		return err
 	}
@@ -458,7 +458,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 			continue
 		}
 
-		result, err := rt.interpreter.Interpret(ctx, afero.NewBasePathFs(afero.NewOsFs(), "/tmp/repo"), toolCall.Args)
+		result, err := rt.interpreter.Interpret(ctx, afero.NewBasePathFs(afero.NewOsFs(), task.ProjectDirectory), toolCall.Args)
 		if err != nil {
 			return err
 		}
@@ -485,7 +485,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 		}
 
 		_, err := rt.memory.Message.Create().
-			SetTaskID(taskID).
+			SetTaskID(task.ID).
 			SetSource(types.MessageSourceSystem).
 			SetContent(&types.MessageContent{
 				Blocks: toolBlocks,

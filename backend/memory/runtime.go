@@ -153,6 +153,10 @@ func init() {
 	task.DefaultUpdateTime = taskDescUpdateTime.Default.(func() time.Time)
 	// task.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
 	task.UpdateDefaultUpdateTime = taskDescUpdateTime.UpdateDefault.(func() time.Time)
+	// taskDescProjectDirectory is the schema descriptor for project_directory field.
+	taskDescProjectDirectory := taskFields[1].Descriptor()
+	// task.ProjectDirectoryValidator is a validator for the "project_directory" field. It is called by the builders before save.
+	task.ProjectDirectoryValidator = taskDescProjectDirectory.Validators[0].(func(string) error)
 	// taskDescID is the schema descriptor for id field.
 	taskDescID := taskFields[0].Descriptor()
 	// task.DefaultID holds the default value on creation for the id field.
