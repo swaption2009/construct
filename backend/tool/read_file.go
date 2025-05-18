@@ -12,7 +12,7 @@ import (
 
 const readFileDescription = `
 ## Description
-Reads and returns the complete contents of a file at the specified path. This tool is essential for examining existing files when you need to understand, analyze, or extract information from them. The file content is returned as a string, making it suitable for text files such as code, configuration files, documentation, and structured data.
+Reads and returns the complete contents of a file at the specified absolute path. This tool is essential for examining existing files when you need to understand, analyze, or extract information from them. The file content is returned as a string, making it suitable for text files such as code, configuration files, documentation, and structured data.
 
 ## Parameters
 - **path** (string, required): Absolute path to the file you want to read (e.g., "/workspace/project/src/app.js"). Forward slashes (/) work on all platforms.
@@ -28,16 +28,10 @@ Returns an object containing the file content as a string:
 
 If the file doesn't exist or cannot be read, it will throw an exception describing the issue.
 
-## CRITICAL REQUIREMENTS
-- **Always verify file existence**: Check if a file exists before attempting operations that assume its presence
-- **Handle large files appropriately**: For very large files, consider processing the content in chunks
+## IMPORTANT USAGE NOTES
 - **Check file extensions**: Ensure you're reading appropriate file types; this tool is best suited for text files
 - **Process binary files carefully**: Binary files may return unreadable content; consider specialized tools for these cases
-- **Path format**: Always use absolute paths starting with "/"
-%[1]s
-  // Correct path format
-  read_file("/workspace/project/package.json")
-%[1]s
+"- **Path format**: Always use absolute paths starting with "/". For example: /workspace/project/package.json"
 
 ## When to use
 - **Code analysis**: When you need to understand existing code structure, imports, or implementations
@@ -51,21 +45,25 @@ If the file doesn't exist or cannot be read, it will throw an exception describi
 
 ### Analyzing source code
 %[1]s
-const sourceCode = read_file("/workspace/project/src/components/Button.jsx");
-if (!sourceCode.error) {
+try {
+  const sourceCode = read_file("/workspace/project/src/components/Button.jsx");
   // Count React hooks in component
-  const hooksCount = (sourceCode.content.match(/use[A-Z]\w+\(/g) || []).length;
-  print("This component uses ${hooksCount} React hooks");
+  const hooksCount = sourceCode.content.match(/use[A-Z]\w+\(/g) || [];
+  print(%[2]sThis component uses ${hooksCount.length} React hooks%[2]s);
+} catch (error) {
+  print("Error reading file:", error);
 }
 %[1]s
 
 ### Reading and processing structured data
 %[1]s
-const csvData = read_file("/workspace/project/data/users.csv");
-if (!csvData.error) {
+try {
+  const csvData = read_file("/workspace/project/data/users.csv");
   const rows = csvData.content.split('\n').map(row => row.split(','));
   const headers = rows.shift();
-  print("Found ${rows.length} user records with fields: ${headers.join(', ')}");
+  print(%[2]sFound ${rows.length} user records with fields: ${headers.join(', ')}%[2]s);
+} catch (error) {
+  print("Error reading file:", error);
 }
 %[1]s
 `
@@ -78,7 +76,7 @@ type ReadFileResult struct {
 func NewReadFileTool() codeact.Tool {
 	return codeact.NewOnDemandTool(
 		"read_file",
-		fmt.Sprintf(readFileDescription, "```"),
+		fmt.Sprintf(readFileDescription, "```", "`"),
 		readFileHandler,
 	)
 }

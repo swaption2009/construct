@@ -26,7 +26,7 @@ Example output if the file was overwritten:
 	"overwritten": true
 }
 
-## CRITICAL REQUIREMENTS
+## IMPORTANT USAGE NOTES
 - **Maintain proper syntax, indentation, and structure**
 - **Include complete file content**: Always provide the entire content, including imports, exports, and all necessary code.
 - **Match file extension with content**: Ensure the file extension corresponds to the content type
