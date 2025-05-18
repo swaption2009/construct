@@ -14,6 +14,7 @@ import (
 	"text/template"
 	"time"
 
+	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/backend/api"
 	"github.com/furisto/construct/backend/memory"
 	memory_message "github.com/furisto/construct/backend/memory/message"
@@ -194,7 +195,7 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		return err
 	}
 
-	systemPrompt, err := rt.assembleSystemPrompt(agent.Instructions)
+	systemPrompt, err := rt.assembleSystemPrompt(agent.Instructions, task.ProjectDirectory)
 	if err != nil {
 		return err
 	}
@@ -215,7 +216,16 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		return err
 	}
 
-	rt.eventHub.Publish(taskID, newMessage)
+	protoMessage, err := ConvertMemoryMessageToProto(newMessage)
+	if err != nil {
+		return err
+	}
+
+	rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
+		Event: &v1.SubscribeResponse_Message{
+			Message: protoMessage,
+		},
+	})
 	rt.TriggerReconciliation(taskID)
 
 	return nil
@@ -316,23 +326,21 @@ func (rt *Runtime) prepareModelData(
 	return modelMessages, nil
 }
 
-func (rt *Runtime) assembleSystemPrompt(agentInstruction string) (string, error) {
-	toolInstruction := `
+func (rt *Runtime) assembleSystemPrompt(agentInstruction string, cwd string) (string, error) {
+	var toolInstruction string
+	if len(rt.interpreter.Tools) != 0 {
+		toolInstruction = `
 You can use the following tools to help you answer the user's question. The tools are specified as Javascript functions.
 In order to use them you have to write a javascript program and then call the code interpreter tool with the script as argument.
 The only functions that are allowed for this javascript program are the ones specified in the tool descriptions.
 The script will be executed in a new process, so you don't need to worry about the environment it is executed in.
 If you try to call any other function that is not specified here the execution will fail.
 `
+	}
 
 	var builder strings.Builder
 	for _, tool := range rt.interpreter.Tools {
 		fmt.Fprintf(&builder, "# %s\n%s\n\n", tool.Name(), tool.Description())
-	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
 	}
 
 	projectStructure, err := ProjectStructure(cwd)
@@ -445,7 +453,7 @@ func (rt *Runtime) saveResponse(ctx context.Context, taskID uuid.UUID, processed
 }
 
 func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []model.ContentBlock) error {
-	var toolResults []InterpreterToolResult
+	var toolResults []codeact.InterpreterToolResult
 
 	for _, block := range content {
 		toolCall, ok := block.(*model.ToolCallBlock)
@@ -458,12 +466,10 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 			continue
 		}
 
+		os.WriteFile("/tmp/tool_call.json", []byte(toolCall.Args), 0644)
 		result, err := rt.interpreter.Interpret(ctx, afero.NewBasePathFs(afero.NewOsFs(), task.ProjectDirectory), toolCall.Args)
-		if err != nil {
-			return err
-		}
 
-		toolResults = append(toolResults, InterpreterToolResult{
+		toolResults = append(toolResults, codeact.InterpreterToolResult{
 			ID:     toolCall.ID,
 			Output: result,
 			Error:  err,
@@ -552,10 +558,4 @@ func (rt *Runtime) TriggerReconciliation(taskID uuid.UUID) {
 
 func (rt *Runtime) EventHub() *stream.EventHub {
 	return rt.eventHub
-}
-
-type InterpreterToolResult struct {
-	ID     string                     `json:"id"`
-	Output *codeact.InterpreterResult `json:"result"`
-	Error  error                      `json:"error"`
 }
