@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/backend/memory"
 	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/furisto/construct/backend/model"
+	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func ConvertMemoryMessageToModel(m *memory.Message) (*model.Message, error) {
@@ -68,7 +72,7 @@ func ConvertMemoryMessageBlocksToModel(blocks []types.MessageBlock) ([]model.Con
 			contentBlocks = append(contentBlocks, &toolCall)
 
 		case types.MessageBlockKindCodeInterpreterResult:
-			var interpreterResult InterpreterToolResult
+			var interpreterResult codeact.InterpreterToolResult
 			err := json.Unmarshal([]byte(block.Payload), &interpreterResult)
 			if err != nil {
 				return nil, fmt.Errorf("failed to unmarshal code interpreter result block: %w", err)
@@ -90,6 +94,63 @@ func ConvertMemoryMessageBlocksToModel(blocks []types.MessageBlock) ([]model.Con
 	}
 
 	return contentBlocks, nil
+}
+
+func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
+	var role v1.MessageRole
+	switch m.Source {
+	case types.MessageSourceUser:
+		role = v1.MessageRole_MESSAGE_ROLE_USER
+	case types.MessageSourceAssistant:
+		role = v1.MessageRole_MESSAGE_ROLE_ASSISTANT
+	default:
+		role = v1.MessageRole_MESSAGE_ROLE_UNSPECIFIED
+	}
+
+	text := ""
+	for _, block := range m.Content.Blocks {
+		if block.Kind == types.MessageBlockKindText {
+			text = block.Payload
+			break
+		}
+	}
+
+	messageUsage := &v1.MessageUsage{}
+	if m.Usage != nil {
+		messageUsage = &v1.MessageUsage{
+			InputTokens:      m.Usage.InputTokens,
+			OutputTokens:     m.Usage.OutputTokens,
+			CacheWriteTokens: m.Usage.CacheWriteTokens,
+		}
+	}
+
+	metadata := &v1.MessageMetadata{
+		TaskId:    m.TaskID.String(),
+		Role:      role,
+		Usage:     messageUsage,
+		CreatedAt: timestamppb.New(m.CreateTime),
+		UpdatedAt: timestamppb.New(m.UpdateTime),
+	}
+
+	if m.AgentID != uuid.Nil {
+		agentIDStr := m.AgentID.String()
+		metadata.AgentId = &agentIDStr
+	}
+
+	if m.ModelID != uuid.Nil {
+		modelIDStr := m.ModelID.String()
+		metadata.ModelId = &modelIDStr
+	}
+
+	return &v1.Message{
+		Id:       m.ID.String(),
+		Metadata: metadata,
+		Content: &v1.MessageContent{
+			Content: &v1.MessageContent_Text{
+				Text: text,
+			},
+		},
+	}, nil
 }
 
 func ConvertModelMessageToMemory(m *model.Message) (*memory.Message, error) {
