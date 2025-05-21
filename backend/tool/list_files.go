@@ -13,93 +13,105 @@ import (
 
 const listFilesDescription = `
 ## Description
-Lists the contents of a directory, showing files and subdirectories. This tool provides a quick way to explore the file structure of your project and navigate through directories. It's optimized for performance and provides a clear, structured view of directory contents.
+Lists the contents (files and subdirectories) of a specified directory. This tool helps explore project file structures and navigate directories by providing a clear, structured view of their contents.
 
 ## Parameters
 - **path** (string, required): Absolute path to the directory you want to list (e.g., "/workspace/project/src"). Forward slashes (/) work on all platforms.
-- **recursive** (boolean, required): When set to true, lists all files and directories recursively through all subdirectories. When false or omitted, only lists the top-level contents of the specified directory.
+- **recursive** (boolean, required): When set to true, lists all files and directories recursively through all subdirectories. When false, only lists the top-level contents of the specified directory.
 
 ## Expected Output
 Returns an object containing an array of directory entries. A file is identified by the type code "f" and a directory by the type code "d":
 %[1]s
 {
-  "path": "/absolute/path/to/listed/directory",
+  "path": "/absolute/path/to/listed/directory", 
   "entries": [
-    ["file.js", "f", 1024],  // [name, type code, size in kilobytes]
-    ["images", "d"]          // directories don't need size
+    {
+      "n": "file.js", 
+      "t": "f", 
+      "s": 12340 
+    },
+    {
+      "n": "images", 
+      "t": "d",
+      "s": 0 
+    },
+    {
+      "n": "images/logo.png", 
+      "t": "f", 
+      "s": 102499 
+    }
   ]
 }
 %[1]s
 
-If the directory doesn't exist or cannot be accessed, this tool will throw an exception with a descriptive error message.
+**Details:**
+-   The %[2]spath%[2]s field in the response object will be the same absolute path provided in the %[2]spath%[2]s parameter.
+-   %[2]sentries%[2]s: An array of objects, each representing a file or directory.
+    -   %[2]sn%[2]s (name): The name of the file or subdirectory. If recursive is true and the entry is within a subdirectory, n includes the path relative to the initially specified path.
+    -   %[2]st%[2]s (type): A character code indicating the entry type:
+        -   %[2]s'f'%[2]s: Represents a regular file.
+        -   %[2]s'd'%[2]s: Represents a directory.
+    -   %[2]ss%[2]s (size): The size of the entry **in bytes**. For directories, the size is reported as 0.
+-   If the target directory is empty, %[2]sentries%[2]s will be an empty array (%[2]s[]%[2]s).
+-   If the specified %[2]spath%[2]s does not exist, is not a directory, or cannot be accessed due to permissions or other issues, the tool will throw an exception with a descriptive error message.
 
-## CRITICAL REQUIREMENTS
-- **Verify directory existence**: Try/catch the operation to handle potential exceptions
-%[1]s
-  try {
-    const dirContents = list_dir("/workspace/project/src");
-    print("Found ${dirContents.entries.length} items");
-  } catch (error) {
-    print("Error listing directory:", error.message);
-  }
-%[1]s
+## IMPORTANT USAGE NOTES
 - **Path format**: Always use absolute paths starting with "/"
 %[1]s
   // Correct path format
-  list_dir("/workspace/project/src")
+  list_files("/workspace/project/src", false)
 %[1]s
 - **Performance considerations**: Be cautious with the recursive option on large directories
 %[1]s
   // First list non-recursively to understand structure
   try {
-    const topLevelContents = list_dir("/workspace/project");
+    const topLevelContents = list_files("/workspace/project", false);
     print("Top-level directories:", topLevelContents.entries
-      .filter(entry => entry.type === "directory")
-      .map(dir => dir.name));
+      .filter(entry => entry.t === "d")
+      .map(dir => dir.n));
 
     // Then list specific subdirectories recursively if needed
-    const componentsContents = list_dir("/workspace/project/src/components", true);
+    const componentsContents = list_files("/workspace/project/src/components", true);
   } catch (error) {
-    print("Error exploring project structure:", error.message);
+    print("Error exploring project structure:", error);
   }
 %[1]s
 - **Exception handling**: Always wrap directory operations in try/catch blocks
 
 ## When to use
 - **Project exploration**: When you need to understand the structure of a project
-- **File location**: When looking for specific files or file types
+- **File location**: When looking for specific files or file types (e.g., all *.js files in /src)
 - **Verification**: To confirm directories exist before performing operations
-- **Path discovery**: To identify the correct paths for file operations
-- **Structure analysis**: To analyze the organization of a project directory
-- **Before file operations**: Before reading from or writing to files to ensure correct paths
+- **Path discovery**: To identify the correct paths for subsequent file operations
+- **Pre-computation for operations**: Before batch operations like deleting, copying, or archiving, to gather the list of items to be processed
 
 ## Usage Examples
 
 %[1]s
 try {
   // List top-level contents non-recursively
-  const srcFiles = list_dir("/workspace/project/src");
+  const srcFiles = list_files("/workspace/project/src", false);
   print("Top-level JS files:", srcFiles.entries
-    .filter(e => e.type === "file" && e.name.endsWith(".js"))
-    .map(f => f.name));
+    .filter(e => e.t === "f" && e.n.endsWith(".js"))
+    .map(f => f.n));
 
   // Find subdirectories and explore one recursively
-  const components = srcFiles.entries.find(e => e.type === "directory" && e.name === "components");
+  const components = srcFiles.entries.find(e => e.t === "d" && e.n === "components");
   if (components) {
-    const allComponents = list_dir("/workspace/project/src/components", true);
+    const allComponents = list_files("/workspace/project/src/components", true);
 
     // Group files by extension
     const byExt = allComponents.entries
-      .filter(e => e.type === "file")
+      .filter(e => e.t === "f")
       .reduce((acc, f) => {
-        const ext = f.name.split('.').pop() || "unknown";
+        const ext = f.n.split('.').pop() || "unknown";
         acc[ext] = (acc[ext] || 0) + 1;
         return acc;
       }, {});
     print("Files by extension:", byExt);
   }
 } catch (error) {
-  print("Error listing directory:", error.message);
+  print("Error listing directory:", error);
 }
 %[1]s
 `
@@ -107,7 +119,7 @@ try {
 func NewListFilesTool() codeact.Tool {
 	return codeact.NewOnDemandTool(
 		"list_files",
-		fmt.Sprintf(listFilesDescription, "```"),
+		fmt.Sprintf(listFilesDescription, "```", "`"),
 		listFilesHandler,
 	)
 }
