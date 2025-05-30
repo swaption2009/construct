@@ -1,0 +1,13 @@
+linters-settings:
+  gocritic:
+    disabled-checks:
+      - infertypeargs
+
+issues:
+  exclude-rules:
+    - path: ".*_query\\.go$"
+      linters:
+        - infertypeargs
+    - text: "unnecessary type arguments"
+      linters:
+        - infertypeargs
