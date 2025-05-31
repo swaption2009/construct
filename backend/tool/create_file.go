@@ -10,7 +10,7 @@ import (
 	"github.com/furisto/construct/backend/tool/codeact"
 )
 
-const writeFileDescription = `
+const createFileDescription = `
 ## Description
 Creates a new file with the specified content or completely overwrites an existing file if it already exists. This tool writes the complete file in a single operation. 
 It provides detailed error messages via exceptions on failure.
@@ -86,10 +86,19 @@ export default Button;%[2]s)
 %[1]s
 `
 
+type CreateFileInput struct {
+	Path    string
+	Content string
+}
+
+type CreateFileResult struct {
+	Overwritten bool `json:"overwritten"`
+}
+
 func NewCreateFileTool() codeact.Tool {
 	return codeact.NewOnDemandTool(
 		"create_file",
-		fmt.Sprintf(writeFileDescription, "```", "`"),
+		fmt.Sprintf(createFileDescription, "```", "`"),
 		createFileHandler,
 	)
 }
@@ -103,7 +112,10 @@ func createFileHandler(session *codeact.Session) func(call sobek.FunctionCall) s
 		path := call.Arguments[0].String()
 		content := call.Arguments[1].String()
 
-		result, err := createFile(session.FS, path, content)
+		result, err := createFile(session.FS, &CreateFileInput{
+			Path:    path,
+			Content: content,
+		})
 		if err != nil {
 			session.Throw(err)
 		}
@@ -112,10 +124,11 @@ func createFileHandler(session *codeact.Session) func(call sobek.FunctionCall) s
 	}
 }
 
-func createFile(fsys afero.Fs, path string, content string) (*CreateFileResult, error) {
-	if !filepath.IsAbs(path) {
-		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", path)
+func createFile(fsys afero.Fs, input *CreateFileInput) (*CreateFileResult, error) {
+	if !filepath.IsAbs(input.Path) {
+		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", input.Path)
 	}
+	path := input.Path
 
 	var existed bool
 	if stat, err := fsys.Stat(path); err == nil {
@@ -126,7 +139,7 @@ func createFile(fsys afero.Fs, path string, content string) (*CreateFileResult, 
 		existed = true
 	}
 
-	err := fsys.MkdirAll(filepath.Dir(path), 0755)
+	err := fsys.MkdirAll(filepath.Dir(path), 0644)
 	if err != nil {
 		return nil, codeact.NewCustomError("could not create the parent directory", []string{
 			"Verify that you have the permissions to create the parent directories",
@@ -135,7 +148,7 @@ func createFile(fsys afero.Fs, path string, content string) (*CreateFileResult, 
 			"path", path, "error", err)
 	}
 
-	err = afero.WriteFile(fsys, path, []byte(content), 0644)
+	err = afero.WriteFile(fsys, path, []byte(input.Content), 0644)
 	if err != nil {
 		return nil, codeact.NewCustomError(fmt.Sprintf("error writing file %s", path), []string{
 			"Ensure that you have the permission to write to the file",
@@ -144,8 +157,4 @@ func createFile(fsys afero.Fs, path string, content string) (*CreateFileResult, 
 	}
 
 	return &CreateFileResult{Overwritten: existed}, nil
-}
-
-type CreateFileResult struct {
-	Overwritten bool `json:"overwritten"`
 }
