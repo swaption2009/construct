@@ -21,8 +21,8 @@ service ModelService {
 }
 
 message ModelMetadata {
-  google.protobuf.Timestamp created_at = 2 [(buf.validate.field).required = true];
-  google.protobuf.Timestamp updated_at = 3 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp created_at = 1 [(buf.validate.field).required = true];
+  google.protobuf.Timestamp updated_at = 2 [(buf.validate.field).required = true];
 }
 
 enum ModelCapability {
@@ -47,12 +47,11 @@ message Model {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 255
   ];
-  optional string alias = 4;
-  string model_provider_id = 5 [(buf.validate.field).string.uuid = true];
-  repeated ModelCapability capabilities = 6;
-  ModelPricing pricing = 7;
-  int64 context_window = 8;
-  bool enabled = 9;
+  string model_provider_id = 4 [(buf.validate.field).string.uuid = true];
+  repeated ModelCapability capabilities = 5;
+  ModelPricing pricing = 6;
+  int64 context_window = 7 [(buf.validate.field).int64.gt = 0];
+  bool enabled = 8;
 }
 
 message CreateModelRequest {
@@ -60,11 +59,10 @@ message CreateModelRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 255
   ];
-  optional string alias = 2 [(buf.validate.field).string.max_len = 255];
-  string model_provider_id = 3 [(buf.validate.field).string.uuid = true];
-  repeated ModelCapability capabilities = 4;
-  ModelPricing pricing = 5;
-  int64 context_window = 6;
+  string model_provider_id = 2 [(buf.validate.field).string.uuid = true];
+  repeated ModelCapability capabilities = 3;
+  ModelPricing pricing = 4;
+  int64 context_window = 5 [(buf.validate.field).int64.gt = 0];
 }
 
 message CreateModelResponse {
@@ -83,6 +81,7 @@ message ListModelsRequest {
   message Filter {
     optional string model_provider_id = 1 [(buf.validate.field).string.uuid = true];
     optional bool enabled = 2;
+    optional string name = 3 [(buf.validate.field).string.min_len = 1, (buf.validate.field).string.max_len = 255];
   }
   Filter filter = 1;
   string page_token = 2 [(buf.validate.field).string.max_len = 255];
@@ -99,12 +98,11 @@ message UpdateModelRequest {
     (buf.validate.field).string.min_len = 1,
     (buf.validate.field).string.max_len = 255
   ];
-  optional string alias = 3 [(buf.validate.field).string.max_len = 255];
-  optional string model_provider_id = 4 [(buf.validate.field).string.uuid = true];
-  repeated ModelCapability capabilities = 5;
-  optional ModelPricing pricing = 6;
-  optional int64 context_window = 7;
-  optional bool enabled = 8;
+  optional string model_provider_id = 3 [(buf.validate.field).string.uuid = true];
+  repeated ModelCapability capabilities = 4;
+  optional ModelPricing pricing = 5;
+  optional int64 context_window = 6 [(buf.validate.field).int64.gt = 0];
+  optional bool enabled = 7;
 }
 
 message UpdateModelResponse {
