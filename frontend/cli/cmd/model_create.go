@@ -10,30 +10,41 @@ import (
 )
 
 type modelCreateOptions struct {
-	Name            string
-	ModelProviderID string
-	ContextWindow   int64
+	ModelProvider string
+	ContextWindow int64
 }
 
 func NewModelCreateCmd() *cobra.Command {
 	var options modelCreateOptions
 
 	cmd := &cobra.Command{
-		Use:   "create",
+		Use:   "create <model-name> --model-provider <model-provider-name> --context-window <context-window>",
 		Short: "Create a new model",
+		Long:  `Create a new model with the specified name, model provider, and context window.`,
+		Example: `  # Create a model with a specific provider name
+  construct model create "gpt-4" --model-provider "openai-dev" --context-window 8192
+
+  # Create a model using provider ID
+  construct model create "claude-3-5-sonnet" --model-provider "123e4567-e89b-12d3-a456-426614174000" --context-window 200000`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
 			client := getAPIClient(cmd.Context())
+
+			modelProviderID, err := getModelProviderID(cmd.Context(), client, options.ModelProvider)
+			if err != nil {
+				return fmt.Errorf("failed to resolve model provider %s: %w", options.ModelProvider, err)
+			}
 
 			resp, err := client.Model().CreateModel(cmd.Context(), &connect.Request[v1.CreateModelRequest]{
 				Msg: &v1.CreateModelRequest{
-					Name:            options.Name,
-					ModelProviderId: options.ModelProviderID,
+					Name:            name,
+					ModelProviderId: modelProviderID,
 					ContextWindow:   options.ContextWindow,
 				},
 			})
 
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create model: %w", err)
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), resp.Msg.Model.Id)
@@ -41,9 +52,11 @@ func NewModelCreateCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&options.Name, "name", "n", "", "The name of the model")
-	cmd.Flags().StringVarP(&options.ModelProviderID, "model-provider-id", "p", "", "The ID of the model provider")
-	cmd.Flags().Int64VarP(&options.ContextWindow, "context-window", "w", 0, "The context window size")
+	cmd.Flags().StringVarP(&options.ModelProvider, "model-provider", "p", "", "The name or ID of the model provider (required)")
+	cmd.Flags().Int64VarP(&options.ContextWindow, "context-window", "w", 0, "The context window size (required)")
+
+	cmd.MarkFlagRequired("model-provider")
+	cmd.MarkFlagRequired("context-window")
 
 	return cmd
 }

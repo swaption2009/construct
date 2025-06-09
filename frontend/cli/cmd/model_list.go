@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"connectrpc.com/connect"
 
 	v1 "github.com/furisto/construct/api/go/v1"
@@ -8,10 +10,9 @@ import (
 )
 
 type modelListOptions struct {
-	ModelProviderID string
-	Enabled         bool
-	ShowDisabled    bool
-	FormatOptions   FormatOptions
+	ModelProvider string
+	ShowDisabled  bool
+	FormatOptions FormatOptions
 }
 
 func NewModelListCmd() *cobra.Command {
@@ -21,12 +22,26 @@ func NewModelListCmd() *cobra.Command {
 		Use:     "list",
 		Short:   "List models",
 		Aliases: []string{"ls"},
+		Long:    `List models.`,
+		Example: `  # List all models
+  construct model list
+
+  # List models by provider name
+  construct model list --model-provider "anthropic-dev"
+
+  # List all models including disabled ones
+  construct model list --show-disabled`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := getAPIClient(cmd.Context())
 
 			filter := &v1.ListModelsRequest_Filter{}
-			if options.ModelProviderID != "" {
-				filter.ModelProviderId = &options.ModelProviderID
+
+			if options.ModelProvider != "" {
+				modelProviderID, err := getModelProviderID(cmd.Context(), client, options.ModelProvider)
+				if err != nil {
+					return fmt.Errorf("failed to resolve model provider %s: %w", options.ModelProvider, err)
+				}
+				filter.ModelProviderId = &modelProviderID
 			}
 
 			if !options.ShowDisabled {
@@ -42,7 +57,7 @@ func NewModelListCmd() *cobra.Command {
 
 			resp, err := client.Model().ListModels(cmd.Context(), req)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to list models: %w", err)
 			}
 
 			displayModels := make([]*ModelDisplay, len(resp.Msg.Models))
@@ -54,8 +69,8 @@ func NewModelListCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&options.ModelProviderID, "model-provider-id", "p", "", "Filter by model provider ID")
-	cmd.Flags().BoolVar(&options.ShowDisabled, "show-disabled", false, "Show disabled models")
+	cmd.Flags().StringVarP(&options.ModelProvider, "model-provider", "p", "", "Filter by model provider name or ID")
+	cmd.Flags().BoolVarP(&options.ShowDisabled, "show-disabled", "d", false, "Show disabled models")
 	addFormatOptions(cmd, &options.FormatOptions)
 	return cmd
 }

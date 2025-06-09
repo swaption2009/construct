@@ -12,12 +12,12 @@ import (
 )
 
 type MockFormatter struct {
-	DisplayedObjects []any
+	DisplayedObjects any
 	DisplayFormat    OutputFormat
 }
 
 func (m *MockFormatter) Display(resources any, format OutputFormat) error {
-	m.DisplayedObjects = append(m.DisplayedObjects, resources)
+	m.DisplayedObjects = resources
 	m.DisplayFormat = format
 	return nil
 }
@@ -93,10 +93,8 @@ func (s *TestSetup) RunTests(t *testing.T, scenarios []TestScenario) {
 				actual.Error = err.Error()
 			} else {
 				actual.Stdout = stdout.String()
-				if len(mockFormatter.DisplayedObjects) > 0 {
-					actual.DisplayedObjects = mockFormatter.DisplayedObjects
-					actual.DisplayFormat = mockFormatter.DisplayFormat
-				}
+				actual.DisplayedObjects = mockFormatter.DisplayedObjects
+				actual.DisplayFormat = mockFormatter.DisplayFormat
 			}
 
 			if diff := cmp.Diff(scenario.Expected, actual, s.CmpOptions...); diff != "" {
