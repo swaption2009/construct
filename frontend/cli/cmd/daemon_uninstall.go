@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 
+	"github.com/furisto/construct/frontend/cli/pkg/terminal"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
@@ -61,7 +63,7 @@ func uninstallDaemon(ctx context.Context, cmd *cobra.Command, options daemonUnin
 	}
 
 	if len(installedServices) == 0 {
-		fmt.Fprintf(stdout, "✓ Construct daemon service not found. Nothing to do.\n")
+		fmt.Fprintf(stdout, "%s Construct daemon service not found. Nothing to do.\n", terminal.SuccessSymbol)
 		return nil
 	}
 
@@ -78,7 +80,7 @@ func uninstallDaemon(ctx context.Context, cmd *cobra.Command, options daemonUnin
 		fmt.Fprintf(stdout, "\n")
 
 		if !confirm(stdin, stdout, "Are you sure you want to continue?") {
-			fmt.Fprintf(stdout, "✗ Uninstall cancelled.\n")
+			fmt.Fprintf(stdout, "%s Uninstall cancelled.\n", terminal.ErrorSymbol)
 			return nil
 		}
 	}
@@ -90,7 +92,7 @@ func uninstallDaemon(ctx context.Context, cmd *cobra.Command, options daemonUnin
 		}
 	}
 
-	fmt.Fprintf(stdout, "✓ Daemon uninstalled successfully\n")
+	fmt.Fprintf(stdout, "%s Daemon uninstalled successfully\n", terminal.SuccessSymbol)
 	return nil
 }
 
@@ -197,16 +199,19 @@ func uninstallService(ctx context.Context, out io.Writer, fs *afero.Afero, comma
 
 func uninstallLaunchdService(ctx context.Context, out io.Writer, fs *afero.Afero, command CommandRunner, service installedService) error {
 	for _, plistPath := range service.Files {
-		// Try to unload the service (ignore errors if not loaded)
-		_, _ = command.Run(ctx, "launchctl", "unload", plistPath)
-		fmt.Fprintf(out, "✓ Launchd service unloaded\n")
+		// Try modern bootout command first, fall back to legacy unload
+		_, bootoutErr := command.Run(ctx, "launchctl", "bootout", "gui/"+getUserID(), plistPath)
+		if bootoutErr != nil {
+			// Fall back to legacy unload command for older systems
+			_, _ = command.Run(ctx, "launchctl", "unload", plistPath)
+		}
+		fmt.Fprintf(out, "%s Launchd service unloaded\n", terminal.SuccessSymbol)
 
-		// Remove the plist file
 		err := fs.Remove(plistPath)
 		if err != nil {
 			return fmt.Errorf("failed to remove plist file %s: %w", plistPath, err)
 		}
-		fmt.Fprintf(out, "✓ Service file removed: %s\n", plistPath)
+		fmt.Fprintf(out, "%s Service file removed: %s\n", terminal.SuccessSymbol, plistPath)
 	}
 
 	return nil
@@ -215,18 +220,26 @@ func uninstallLaunchdService(ctx context.Context, out io.Writer, fs *afero.Afero
 func uninstallSystemdService(ctx context.Context, out io.Writer, fs *afero.Afero, command CommandRunner, service installedService) error {
 	_, _ = command.Run(ctx, "systemctl", "stop", "construct.socket")
 	_, _ = command.Run(ctx, "systemctl", "disable", "construct.socket")
-	fmt.Fprintf(out, "✓ Systemd service stopped and disabled\n")
+	fmt.Fprintf(out, "%s Systemd service stopped and disabled\n", terminal.SuccessSymbol)
 
 	for _, filePath := range service.Files {
 		err := fs.Remove(filePath)
 		if err != nil {
 			return fmt.Errorf("failed to remove service file %s: %w", filePath, err)
 		}
-		fmt.Fprintf(out, "✓ Service file removed: %s\n", filePath)
+		fmt.Fprintf(out, "%s Service file removed: %s\n", terminal.SuccessSymbol, filePath)
 	}
 
 	_, _ = command.Run(ctx, "systemctl", "daemon-reload")
-	fmt.Fprintf(out, "✓ Systemd daemon reloaded\n")
+	fmt.Fprintf(out, "%s Systemd daemon reloaded\n", terminal.SuccessSymbol)
 
 	return nil
+}
+
+func getUserID() string {
+	user, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	return user.Uid
 }
