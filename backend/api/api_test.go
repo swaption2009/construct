@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
-	"sync"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -19,8 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 )
-
-var migrationMutex sync.Mutex
 
 type ClientServiceCall[Request any, Response any] func(ctx context.Context, client *api_client.Client, req *connect.Request[Request]) (*connect.Response[Response], error)
 
@@ -60,7 +58,7 @@ func (s *ServiceTestSetup[Request, Response]) RunServiceTests(t *testing.T, scen
 	defer server.Close()
 
 	apiClient := api_client.NewClient(api_client.EndpointContext{
-		Address: server.API.URL,
+		Address: server.API.URL + "/api",
 		Type:    "http",
 	})
 
@@ -133,7 +131,9 @@ type TestServer struct {
 }
 
 func NewTestServer(t *testing.T, handlerOptions HandlerOptions) *TestServer {
-	server := httptest.NewUnstartedServer(NewHandler(handlerOptions))
+	mux := http.NewServeMux()
+	mux.Handle("/api/", http.StripPrefix("/api", NewHandler(handlerOptions)))
+	server := httptest.NewUnstartedServer(mux)
 
 	return &TestServer{
 		API:     server,

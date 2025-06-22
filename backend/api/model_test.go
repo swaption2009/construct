@@ -25,7 +25,7 @@ func TestCreateModel(t *testing.T) {
 		CmpOptions: []cmp.Option{
 			cmpopts.IgnoreUnexported(v1.CreateModelResponse{}, v1.Model{}, v1.ModelMetadata{}, v1.ModelSpec{}, v1.ModelPricing{}),
 			protocmp.Transform(),
-			protocmp.IgnoreFields(&v1.ModelMetadata{}, "id", "created_at", "updated_at", "model_provider_id"),
+			protocmp.IgnoreFields(&v1.ModelMetadata{}, "id", "created_at", "updated_at"),
 		},
 	}
 
@@ -77,6 +77,9 @@ func TestCreateModel(t *testing.T) {
 			Expected: ServiceTestExpectation[v1.CreateModelResponse]{
 				Response: v1.CreateModelResponse{
 					Model: &v1.Model{
+						Metadata: &v1.ModelMetadata{
+							ModelProviderId: modelProviderID.String(),
+						},
 						Spec: &v1.ModelSpec{
 							Name:          "test-model",
 							ContextWindow: 4096,
@@ -106,7 +109,7 @@ func TestGetModel(t *testing.T) {
 		CmpOptions: []cmp.Option{
 			cmpopts.IgnoreUnexported(v1.GetModelResponse{}, v1.Model{}, v1.ModelMetadata{}, v1.ModelSpec{}, v1.ModelPricing{}),
 			protocmp.Transform(),
-			protocmp.IgnoreFields(&v1.ModelMetadata{}, "id", "created_at", "updated_at", "model_provider_id"),
+			protocmp.IgnoreFields(&v1.ModelMetadata{}, "id", "created_at", "updated_at"),
 		},
 	}
 
@@ -147,6 +150,9 @@ func TestGetModel(t *testing.T) {
 			Expected: ServiceTestExpectation[v1.GetModelResponse]{
 				Response: v1.GetModelResponse{
 					Model: &v1.Model{
+						Metadata: &v1.ModelMetadata{
+							ModelProviderId: modelProviderID.String(),
+						},
 						Spec: &v1.ModelSpec{
 							Name:          "claude-3-7-sonnet-20250219",
 							ContextWindow: 200_000,
@@ -236,10 +242,10 @@ func TestListModels(t *testing.T) {
 								ModelProviderId: modelProviderID.String(),
 							},
 							Spec: &v1.ModelSpec{
-								Name:         "claude-3-7-sonnet-20250219",
+								Name:          "claude-3-7-sonnet-20250219",
 								ContextWindow: 200_000,
-								Enabled:      true,
-								Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+								Enabled:       true,
+								Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 								Pricing: &v1.ModelPricing{
 									InputCost:      adapters.Float64ToProtoDecimal(3),
 									OutputCost:     adapters.Float64ToProtoDecimal(15),
@@ -280,10 +286,10 @@ func TestListModels(t *testing.T) {
 								ModelProviderId: modelProviderID.String(),
 							},
 							Spec: &v1.ModelSpec{
-								Name:         "claude-3-7-sonnet-20250219",
+								Name:          "claude-3-7-sonnet-20250219",
 								ContextWindow: 200_000,
-								Enabled:      true,
-								Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+								Enabled:       true,
+								Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 								Pricing: &v1.ModelPricing{
 									InputCost:      adapters.Float64ToProtoDecimal(3),
 									OutputCost:     adapters.Float64ToProtoDecimal(15),
@@ -319,10 +325,10 @@ func TestListModels(t *testing.T) {
 								ModelProviderId: modelProviderID.String(),
 							},
 							Spec: &v1.ModelSpec{
-								Name:         "claude-3-7-sonnet-20250219",
+								Name:          "claude-3-7-sonnet-20250219",
 								ContextWindow: 200_000,
-								Enabled:      true,
-								Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+								Enabled:       true,
+								Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 								Pricing: &v1.ModelPricing{
 									InputCost:      adapters.Float64ToProtoDecimal(3),
 									OutputCost:     adapters.Float64ToProtoDecimal(15),
@@ -337,10 +343,10 @@ func TestListModels(t *testing.T) {
 								ModelProviderId: modelProviderID.String(),
 							},
 							Spec: &v1.ModelSpec{
-								Name:         "o1-preview",
+								Name:          "o1-preview",
 								ContextWindow: 200_000,
-								Enabled:      true,
-								Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+								Enabled:       true,
+								Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 								Pricing: &v1.ModelPricing{
 									InputCost:      adapters.Float64ToProtoDecimal(3),
 									OutputCost:     adapters.Float64ToProtoDecimal(15),
@@ -418,9 +424,9 @@ func TestUpdateModel(t *testing.T) {
 							ModelProviderId: modelProviderID.String(),
 						},
 						Spec: &v1.ModelSpec{
-							Name:         "updated-model",
+							Name:          "updated-model",
 							ContextWindow: 500_000,
-							Enabled:      false,
+							Enabled:       false,
 							Capabilities: []v1.ModelCapability{
 								v1.ModelCapability_MODEL_CAPABILITY_THINKING,
 							},
@@ -456,10 +462,10 @@ func TestUpdateModel(t *testing.T) {
 							ModelProviderId: modelProviderID.String(),
 						},
 						Spec: &v1.ModelSpec{
-							Name:         "claude-3-7-sonnet-20250219",
+							Name:          "claude-3-7-sonnet-20250219",
 							ContextWindow: 200_000,
-							Enabled:      true,
-							Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+							Enabled:       true,
+							Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 							Pricing: &v1.ModelPricing{
 								InputCost:      adapters.Float64ToProtoDecimal(3),
 								OutputCost:     adapters.Float64ToProtoDecimal(15),
@@ -497,10 +503,10 @@ func TestUpdateModel(t *testing.T) {
 							ModelProviderId: modelProviderID.String(),
 						},
 						Spec: &v1.ModelSpec{
-							Name:         "claude-3-7-sonnet-20250219",
+							Name:          "claude-3-7-sonnet-20250219",
 							ContextWindow: 200_000,
-							Enabled:      true,
-							Capabilities: []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
+							Enabled:       true,
+							Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_PROMPT_CACHE},
 							Pricing: &v1.ModelPricing{
 								InputCost:      adapters.Float64ToProtoDecimal(0.0001),
 								OutputCost:     adapters.Float64ToProtoDecimal(0.0002),

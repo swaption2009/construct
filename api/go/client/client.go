@@ -25,7 +25,6 @@ type ClientOptions struct {
 func NewClient(endpointContext EndpointContext) *Client {
 	httpClient := &http.Client{}
 
-	var baseURL string
 	if endpointContext.Type == "unix" {
 		httpClient.Transport = &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -33,17 +32,14 @@ func NewClient(endpointContext EndpointContext) *Client {
 			},
 		}
 
-		baseURL = "http://localhost/api" // Include /api prefix for unix sockets
-	} else {
-		// For HTTP connections, ensure proper scheme and /api prefix
-		baseURL = "http://" + endpointContext.Address + "/api"
 	}
+
 	return &Client{
-		modelProvider: v1connect.NewModelProviderServiceClient(httpClient, baseURL),
-		model:         v1connect.NewModelServiceClient(httpClient, baseURL),
-		agent:         v1connect.NewAgentServiceClient(httpClient, baseURL),
-		task:          v1connect.NewTaskServiceClient(httpClient, baseURL),
-		message:       v1connect.NewMessageServiceClient(httpClient, baseURL),
+		modelProvider: v1connect.NewModelProviderServiceClient(httpClient, endpointContext.Address),
+		model:         v1connect.NewModelServiceClient(httpClient, endpointContext.Address),
+		agent:         v1connect.NewAgentServiceClient(httpClient, endpointContext.Address),
+		task:          v1connect.NewTaskServiceClient(httpClient, endpointContext.Address),
+		message:       v1connect.NewMessageServiceClient(httpClient, endpointContext.Address),
 	}
 }
 

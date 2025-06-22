@@ -24,8 +24,7 @@ func TestCreateTask(t *testing.T) {
 		CmpOptions: []cmp.Option{
 			cmpopts.IgnoreUnexported(v1.CreateTaskResponse{}, v1.Task{}, v1.TaskMetadata{}, v1.TaskSpec{}, v1.TaskStatus{}, v1.TaskUsage{}),
 			protocmp.Transform(),
-			protocmp.IgnoreFields(&v1.Task{}, "id"),
-			protocmp.IgnoreFields(&v1.TaskMetadata{}, "created_at", "updated_at"),
+			protocmp.IgnoreFields(&v1.Task{}, "metadata"),
 		},
 	}
 
