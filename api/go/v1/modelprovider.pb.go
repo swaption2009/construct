@@ -911,7 +911,7 @@ var File_construct_v1_modelprovider_proto protoreflect.FileDescriptor
 
 const file_construct_v1_modelprovider_proto_rawDesc = "" +
 	"\n" +
-	" construct/v1/modelprovider.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19construct/v1/common.proto\"\xc5\x01\n" +
+	" construct/v1/modelprovider.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc5\x01\n" +
 	"\x1aCreateModelProviderRequest\x12\x1e\n" +
 	"\x04name\x18\x01 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\x04name\x12%\n" +

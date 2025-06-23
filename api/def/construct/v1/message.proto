@@ -74,7 +74,7 @@ message MessageMetadata {
 // MessageSpec defines the user-configurable specification of a message.
 message MessageSpec {
   // content contains the actual message content (text, images, etc.).
-  MessageContent content = 1;
+  repeated MessagePart content = 1;
 }
 
 // MessageStatus contains the observed state and usage information of the message.
@@ -95,12 +95,16 @@ enum MessageRole {
   MESSAGE_ROLE_ASSISTANT = 2;
 }
 
-// MessageContent contains the actual content of a message, supporting different content types.
-message MessageContent {
+// MessagePart contains the actual content of a message, supporting different content types.
+message MessagePart {
+  message Text {
+    string content = 1;
+  }
+
   // content holds the message payload in various formats.
-  oneof content {
+  oneof data {
     // text contains plain text message content.
-    string text = 1;
+    Text text = 1;
   }
 }
 

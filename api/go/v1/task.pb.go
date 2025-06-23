@@ -217,8 +217,8 @@ type TaskSpec struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// agent_id references the agent assigned to execute this task (UUID format, optional).
 	AgentId *string `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3,oneof" json:"agent_id,omitempty"`
-	// project_directory is the file system path where the task will be executed.
-	ProjectDirectory string `protobuf:"bytes,2,opt,name=project_directory,json=projectDirectory,proto3" json:"project_directory,omitempty"`
+	// workspace is the file system path where the task will be executed.
+	Workspace string `protobuf:"bytes,2,opt,name=workspace,proto3" json:"workspace,omitempty"`
 	// phase is the desired operational state of the task.
 	DesiredPhase TaskPhase `protobuf:"varint,3,opt,name=desired_phase,json=desiredPhase,proto3,enum=construct.v1.TaskPhase" json:"desired_phase,omitempty"`
 	// description is a brief description of the task.
@@ -264,9 +264,9 @@ func (x *TaskSpec) GetAgentId() string {
 	return ""
 }
 
-func (x *TaskSpec) GetProjectDirectory() string {
+func (x *TaskSpec) GetWorkspace() string {
 	if x != nil {
-		return x.ProjectDirectory
+		return x.Workspace
 	}
 	return ""
 }
@@ -1189,7 +1189,7 @@ var File_construct_v1_task_proto protoreflect.FileDescriptor
 
 const file_construct_v1_task_proto_rawDesc = "" +
 	"\n" +
-	"\x17construct/v1/task.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19construct/v1/common.proto\x1a\x1aconstruct/v1/message.proto\"\x9c\x01\n" +
+	"\x17construct/v1/task.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1aconstruct/v1/message.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9c\x01\n" +
 	"\x04Task\x126\n" +
 	"\bmetadata\x18\x01 \x01(\v2\x1a.construct.v1.TaskMetadataR\bmetadata\x12*\n" +
 	"\x04spec\x18\x02 \x01(\v2\x16.construct.v1.TaskSpecR\x04spec\x120\n" +
@@ -1199,10 +1199,10 @@ const file_construct_v1_task_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tcreatedAt\x12A\n" +
 	"\n" +
-	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tupdatedAt\"\xea\x01\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\tupdatedAt\"\xdb\x01\n" +
 	"\bTaskSpec\x12(\n" +
-	"\bagent_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\aagentId\x88\x01\x01\x123\n" +
-	"\x11project_directory\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\x10projectDirectory\x12F\n" +
+	"\bagent_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\aagentId\x88\x01\x01\x12$\n" +
+	"\tworkspace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tworkspace\x12F\n" +
 	"\rdesired_phase\x18\x03 \x01(\x0e2\x17.construct.v1.TaskPhaseB\b\xbaH\x05\x82\x01\x02\x10\x01R\fdesiredPhase\x12*\n" +
 	"\vdescription\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10R\vdescriptionB\v\n" +
 	"\t_agent_id\"t\n" +

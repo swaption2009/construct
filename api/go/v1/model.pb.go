@@ -1027,7 +1027,7 @@ var File_construct_v1_model_proto protoreflect.FileDescriptor
 
 const file_construct_v1_model_proto_rawDesc = "" +
 	"\n" +
-	"\x18construct/v1/model.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/type/decimal.proto\x1a\x19construct/v1/common.proto\"\xe5\x01\n" +
+	"\x18construct/v1/model.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19google/type/decimal.proto\"\xe5\x01\n" +
 	"\rModelMetadata\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\x12A\n" +
 	"\n" +

@@ -828,7 +828,7 @@ var File_construct_v1_agent_proto protoreflect.FileDescriptor
 
 const file_construct_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x18construct/v1/agent.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x19construct/v1/common.proto\"m\n" +
+	"\x18construct/v1/agent.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"m\n" +
 	"\x05Agent\x127\n" +
 	"\bmetadata\x18\x01 \x01(\v2\x1b.construct.v1.AgentMetadataR\bmetadata\x12+\n" +
 	"\x04spec\x18\x02 \x01(\v2\x17.construct.v1.AgentSpecR\x04spec\"\xaf\x01\n" +

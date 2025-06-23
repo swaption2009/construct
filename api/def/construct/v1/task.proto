@@ -68,8 +68,8 @@ message TaskSpec {
   // agent_id references the agent assigned to execute this task (UUID format, optional).
   optional string agent_id = 1 [(buf.validate.field).string.uuid = true];
 
-  // project_directory is the file system path where the task will be executed.
-  string project_directory = 2 [(buf.validate.field).required = true];
+  // workspace is the file system path where the task will be executed.
+  string workspace = 2 [(buf.validate.field).required = true];
 
   // phase is the desired operational state of the task.
   TaskPhase desired_phase = 3 [(buf.validate.field).enum.defined_only = true];
