@@ -6,12 +6,18 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
 
 func TestAgentList(t *testing.T) {
-	setup := &TestSetup{}
+	setup := &TestSetup{
+		CmpOptions: []cmp.Option{
+			cmpopts.IgnoreFields(AgentDisplay{}, "CreatedAt"),
+		},
+	}
 
 	agentID1 := uuid.New().String()
 	agentID2 := uuid.New().String()
@@ -27,24 +33,24 @@ func TestAgentList(t *testing.T) {
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 					createTestAgent(agentID2, "reviewer", "A code reviewer", "Description for reviewer", modelID2),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
+				setupModelNameLookup(mockClient, "claude-4", modelID2)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
-						{
-							ID:           agentID2,
-							Name:         "reviewer",
-							Description:  "Description for reviewer",
-							Instructions: "A code reviewer",
-							Model:        modelID2,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
+					},
+					{
+						ID:           agentID2,
+						Name:         "reviewer",
+						Description:  "Description for reviewer",
+						Instructions: "A code reviewer",
+						Model:        "claude-4",
 					},
 				},
 			},
@@ -56,18 +62,19 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, nil, []*v1.Agent{
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
 					},
 				},
 			},
@@ -80,17 +87,16 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, filter, []*v1.Agent{
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
 					},
 				},
 			},
@@ -104,17 +110,16 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, filter, []*v1.Agent{
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 				})
+				setupModelNameLookup(mockClient, "claude-4", modelID1)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "claude-4",
 					},
 				},
 			},
@@ -129,24 +134,24 @@ func TestAgentList(t *testing.T) {
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 					createTestAgent(agentID2, "reviewer", "A code reviewer", "Description for reviewer", modelID2),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
+				setupModelNameLookup(mockClient, "claude-4", modelID2)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
-						{
-							ID:           agentID2,
-							Name:         "reviewer",
-							Description:  "Description for reviewer",
-							Instructions: "A code reviewer",
-							Model:        modelID2,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
+					},
+					{
+						ID:           agentID2,
+						Name:         "reviewer",
+						Description:  "Description for reviewer",
+						Instructions: "A code reviewer",
+						Model:        "claude-4",
 					},
 				},
 			},
@@ -161,17 +166,16 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, filter, []*v1.Agent{
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
 					},
 				},
 			},
@@ -187,24 +191,24 @@ func TestAgentList(t *testing.T) {
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 					createTestAgent(agentID2, "reviewer", "A code reviewer", "Description for reviewer", modelID2),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
+				setupModelNameLookup(mockClient, "claude-4", modelID2)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
-						{
-							ID:           agentID2,
-							Name:         "reviewer",
-							Description:  "Description for reviewer",
-							Instructions: "A code reviewer",
-							Model:        modelID2,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
+					},
+					{
+						ID:           agentID2,
+						Name:         "reviewer",
+						Description:  "Description for reviewer",
+						Instructions: "A code reviewer",
+						Model:        "claude-4",
 					},
 				},
 			},
@@ -219,17 +223,16 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, filter, []*v1.Agent{
 					createTestAgent(agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID1),
 				})
+				setupModelNameLookup(mockClient, "gpt-4", modelID1)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{
-						{
-							ID:           agentID1,
-							Name:         "coder",
-							Description:  "Description for coder",
-							Instructions: "A helpful coding assistant",
-							Model:        modelID1,
-						},
+				DisplayedObjects: []*AgentDisplay{
+					{
+						ID:           agentID1,
+						Name:         "coder",
+						Description:  "Description for coder",
+						Instructions: "A helpful coding assistant",
+						Model:        "gpt-4",
 					},
 				},
 			},
@@ -241,9 +244,7 @@ func TestAgentList(t *testing.T) {
 				setupAgentListRequestMock(mockClient, nil, []*v1.Agent{})
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					[]*AgentDisplay{},
-				},
+				DisplayedObjects: []*AgentDisplay{},
 			},
 		},
 		{

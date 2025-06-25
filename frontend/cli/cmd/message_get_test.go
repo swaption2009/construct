@@ -56,7 +56,9 @@ func TestMessageGet(t *testing.T) {
 				setupMessageGetMock(mockClient, messageID1, taskID1, agentID1, modelID1, "Assistant response", v1.MessageRole_MESSAGE_ROLE_ASSISTANT, createdAt, updatedAt)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: &DisplayMessage{
 					Id:        messageID1,
 					TaskId:    taskID1,
@@ -83,7 +85,9 @@ func TestMessageGet(t *testing.T) {
 				setupMessageGetMock(mockClient, messageID1, taskID1, agentID1, modelID1, "YAML test message", v1.MessageRole_MESSAGE_ROLE_USER, createdAt, updatedAt)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
 				DisplayedObjects: &DisplayMessage{
 					Id:        messageID1,
 					TaskId:    taskID1,

@@ -125,7 +125,9 @@ func TestTaskList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: []*DisplayTask{
 					{
 						Id:        taskID1,

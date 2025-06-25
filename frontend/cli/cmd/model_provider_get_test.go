@@ -56,7 +56,9 @@ func TestModelProviderGet(t *testing.T) {
 				setupModelProviderGetMock(mockClient, modelProviderID1, "openai-prod", v1.ModelProviderType_MODEL_PROVIDER_TYPE_OPENAI, false)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
 				DisplayedObjects: &ModelProviderDisplay{
 					Id:           modelProviderID1,
 					Name:         "openai-prod",

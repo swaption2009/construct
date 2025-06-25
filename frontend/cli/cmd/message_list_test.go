@@ -205,7 +205,9 @@ func TestMessageList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: []*DisplayMessage{
 					{
 						Id:        messageID1,
@@ -238,7 +240,9 @@ func TestMessageList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
 				DisplayedObjects: []*DisplayMessage{
 					{
 						Id:        messageID2,

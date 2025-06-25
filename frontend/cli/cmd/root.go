@@ -41,7 +41,7 @@ func NewRootCmd() *cobra.Command {
 			})))
 
 			if requiresContext(cmd) {
-				err := setAPIClient(cmd)
+				err := setAPIClient(cmd.Context(), cmd)
 				if err != nil {
 					slog.Error("failed to set API client", "error", err)
 					return err
@@ -122,7 +122,11 @@ func Execute() {
 	sentry.Flush(2 * time.Second)
 }
 
-func setAPIClient(cmd *cobra.Command) error {
+func setAPIClient(ctx context.Context, cmd *cobra.Command) error {
+	if getAPIClient(ctx) != nil {
+		return nil
+	}
+
 	endpointContext, err := loadContext(cmd)
 	if err != nil {
 		return err

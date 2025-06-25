@@ -39,6 +39,21 @@ func (m *MockUserInfo) EXPECT() *MockUserInfoMockRecorder {
 	return m.recorder
 }
 
+// ConstructDir mocks base method.
+func (m *MockUserInfo) ConstructDir() (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConstructDir")
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConstructDir indicates an expected call of ConstructDir.
+func (mr *MockUserInfoMockRecorder) ConstructDir() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConstructDir", reflect.TypeOf((*MockUserInfo)(nil).ConstructDir))
+}
+
 // HomeDir mocks base method.
 func (m *MockUserInfo) HomeDir() (string, error) {
 	m.ctrl.T.Helper()

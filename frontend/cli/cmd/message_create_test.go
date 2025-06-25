@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,7 +29,7 @@ func TestMessageCreate(t *testing.T) {
 				setupMessageCreateMock(mockClient, taskID1, "Please implement a hello world function", messageID1, taskID1, agentID1, createdAt)
 			},
 			Expected: TestExpectation{
-				Stdout: messageID1 + "\n",
+				Stdout: conv.Ptr(messageID1 + "\n"),
 			},
 		},
 		{

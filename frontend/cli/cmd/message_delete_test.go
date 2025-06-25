@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -24,7 +25,7 @@ func TestMessageDelete(t *testing.T) {
 				setupMessageDeleteMock(mockClient, messageID1)
 			},
 			Expected: TestExpectation{
-				Stdout: "",
+				Stdout: conv.Ptr(""),
 			},
 		},
 		{
@@ -35,7 +36,7 @@ func TestMessageDelete(t *testing.T) {
 				setupMessageDeleteMock(mockClient, messageID2)
 			},
 			Expected: TestExpectation{
-				Stdout: "",
+				Stdout: conv.Ptr(""),
 			},
 		},
 		{
@@ -46,7 +47,7 @@ func TestMessageDelete(t *testing.T) {
 				setupMessageDeleteMock(mockClient, messageID1)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete message " + messageID1 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete message " + messageID1 + "? (y/n): "),
 			},
 		},
 		{
@@ -57,7 +58,7 @@ func TestMessageDelete(t *testing.T) {
 				// No delete mocks needed since operation should be cancelled
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete message " + messageID1 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete message " + messageID1 + "? (y/n): "),
 			},
 		},
 		{
@@ -69,7 +70,7 @@ func TestMessageDelete(t *testing.T) {
 				setupMessageDeleteMock(mockClient, messageID2)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete messages " + messageID1 + " " + messageID2 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete messages " + messageID1 + " " + messageID2 + "? (y/n): "),
 			},
 		},
 		{

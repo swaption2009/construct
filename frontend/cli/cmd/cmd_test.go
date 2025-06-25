@@ -5,8 +5,11 @@ import (
 	"context"
 	"testing"
 
+	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
+	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/frontend/cli/cmd/mocks"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
 	"go.uber.org/mock/gomock"
@@ -14,14 +17,16 @@ import (
 
 type MockFormatter struct {
 	DisplayedObjects any
-	DisplayFormat    OutputFormat
+	DisplayFormat    *RenderOptions
 }
 
-func (m *MockFormatter) Display(resources any, format OutputFormat) error {
+func (m *MockFormatter) Render(resources any, options *RenderOptions) error {
 	m.DisplayedObjects = resources
-	m.DisplayFormat = format
+	m.DisplayFormat = options
 	return nil
 }
+
+var _ OutputRenderer = (*MockFormatter)(nil)
 
 type TestRuntimeInfo struct {
 	platform string
@@ -49,10 +54,10 @@ type TestScenario struct {
 }
 
 type TestExpectation struct {
-	Stdout           string
+	Stdout           *string
 	Error            string
 	DisplayedObjects any
-	DisplayFormat    OutputFormat
+	DisplayFormat    *RenderOptions
 }
 
 func (s *TestSetup) RunTests(t *testing.T, scenarios []TestScenario) {
@@ -108,7 +113,7 @@ func (s *TestSetup) RunTests(t *testing.T, scenarios []TestScenario) {
 			ctx = context.WithValue(ctx, ContextKeyOutputRenderer, mockFormatter)
 			ctx = context.WithValue(ctx, ContextKeyCommandRunner, commandRunner)
 			ctx = context.WithValue(ctx, ContextKeyUserInfo, userInfo)
-			
+
 			// Default to Linux platform, can be overridden
 			platform := "linux"
 			if scenario.Platform != "" {
@@ -116,7 +121,6 @@ func (s *TestSetup) RunTests(t *testing.T, scenarios []TestScenario) {
 			}
 			runtimeInfo := &TestRuntimeInfo{platform: platform}
 			ctx = context.WithValue(ctx, ContextKeyRuntimeInfo, runtimeInfo)
-			
 
 			testCmd.SetArgs(scenario.Command)
 
@@ -127,12 +131,37 @@ func (s *TestSetup) RunTests(t *testing.T, scenarios []TestScenario) {
 			}
 
 			actual.DisplayedObjects = mockFormatter.DisplayedObjects
-			actual.DisplayFormat = mockFormatter.DisplayFormat
-			actual.Stdout = stdout.String()
+			if scenario.Expected.DisplayFormat != nil {
+				actual.DisplayFormat = mockFormatter.DisplayFormat
+			}
+
+			if scenario.Expected.Stdout != nil {
+				actual.Stdout = conv.Ptr(stdout.String())
+			}
 
 			if diff := cmp.Diff(scenario.Expected, actual, s.CmpOptions...); diff != "" {
 				t.Errorf("%s() mismatch (-want +got):\n%s", scenario.Name, diff)
 			}
 		})
 	}
+}
+
+func setupModelNameLookup(mockClient *api_client.MockClient, modelName, modelID string) {
+	mockClient.Model.EXPECT().GetModel(
+		gomock.Any(),
+		&connect.Request[v1.GetModelRequest]{
+			Msg: &v1.GetModelRequest{Id: modelID},
+		},
+	).Return(&connect.Response[v1.GetModelResponse]{
+		Msg: &v1.GetModelResponse{
+			Model: &v1.Model{
+				Metadata: &v1.ModelMetadata{
+					Id: modelID,
+				},
+				Spec: &v1.ModelSpec{
+					Name: modelName,
+				},
+			},
+		},
+	}, nil)
 }

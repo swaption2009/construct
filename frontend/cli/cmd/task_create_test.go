@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"go.uber.org/mock/gomock"
@@ -28,7 +29,7 @@ func TestTaskCreate(t *testing.T) {
 				setupTaskCreateMock(mockClient, agentID1, "", taskID1)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(taskID1),
+				Stdout: conv.Ptr(fmt.Sprintln(taskID1)),
 			},
 		},
 		{
@@ -38,7 +39,7 @@ func TestTaskCreate(t *testing.T) {
 				setupTaskCreateMock(mockClient, agentID1, "", taskID1)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(taskID1),
+				Stdout: conv.Ptr(fmt.Sprintln(taskID1)),
 			},
 		},
 		{
@@ -52,7 +53,7 @@ func TestTaskCreate(t *testing.T) {
 				fs.MkdirAll("/path/to/repo", 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(taskID1),
+				Stdout: conv.Ptr(fmt.Sprintln(taskID1)),
 			},
 		},
 		{
@@ -66,7 +67,7 @@ func TestTaskCreate(t *testing.T) {
 				fs.MkdirAll("/path/to/repo", 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(taskID1),
+				Stdout: conv.Ptr(fmt.Sprintln(taskID1)),
 			},
 		},
 		{

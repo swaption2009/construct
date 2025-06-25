@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -122,7 +123,7 @@ func TestModelProviderDelete(t *testing.T) {
 				setupModelProviderDeleteMock(mockClient, modelProviderID1)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete model-provider anthropic-dev? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete model-provider anthropic-dev? (y/n): "),
 			},
 		},
 		{
@@ -134,7 +135,7 @@ func TestModelProviderDelete(t *testing.T) {
 				// No delete mocks needed since operation should be cancelled
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete model-provider anthropic-dev? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete model-provider anthropic-dev? (y/n): "),
 			},
 		},
 		{
@@ -190,7 +191,7 @@ func TestModelProviderDelete(t *testing.T) {
 				setupModelProviderDeleteMock(mockClient, modelProviderID2)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete model-providers anthropic-dev openai-prod? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete model-providers anthropic-dev openai-prod? (y/n): "),
 			},
 		},
 		{

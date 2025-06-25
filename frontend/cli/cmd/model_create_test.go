@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -21,23 +22,23 @@ func TestModelCreate(t *testing.T) {
 	setup.RunTests(t, []TestScenario{
 		{
 			Name:    "success - create model with provider by name",
-			Command: []string{"model", "create", "gpt-4", "--model-provider", "openai-dev", "--context-window", "8192"},
+			Command: []string{"model", "create", "gpt-4", "--provider", "openai-dev", "--context-window", "8192"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				setupModelProviderLookupForCreateMock(mockClient, "openai-dev", modelProviderID1)
 				setupModelCreateMock(mockClient, "gpt-4", modelProviderID1, 8192, modelID1, createdAt)
 			},
 			Expected: TestExpectation{
-				Stdout: modelID1 + "\n",
+				Stdout: conv.Ptr(modelID1 + "\n"),
 			},
 		},
 		{
 			Name:    "success - create model with provider by ID",
-			Command: []string{"model", "create", "claude-3-5-sonnet", "--model-provider", modelProviderID1, "--context-window", "200000"},
+			Command: []string{"model", "create", "claude-3-5-sonnet", "--provider", modelProviderID1, "--context-window", "200000"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				setupModelCreateMock(mockClient, "claude-3-5-sonnet", modelProviderID1, 200000, modelID1, createdAt)
 			},
 			Expected: TestExpectation{
-				Stdout: modelID1 + "\n",
+				Stdout: conv.Ptr(modelID1 + "\n"),
 			},
 		},
 		{
@@ -48,12 +49,12 @@ func TestModelCreate(t *testing.T) {
 				setupModelCreateMock(mockClient, "llama-3.1-8b", modelProviderID1, 32768, modelID1, createdAt)
 			},
 			Expected: TestExpectation{
-				Stdout: modelID1 + "\n",
+				Stdout: conv.Ptr(modelID1 + "\n"),
 			},
 		},
 		{
 			Name:    "error - model provider not found by name",
-			Command: []string{"model", "create", "test-model", "--model-provider", "nonexistent", "--context-window", "4096"},
+			Command: []string{"model", "create", "test-model", "--provider", "nonexistent", "--context-window", "4096"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				mockClient.ModelProvider.EXPECT().ListModelProviders(
 					gomock.Any(),
@@ -72,7 +73,7 @@ func TestModelCreate(t *testing.T) {
 		},
 		{
 			Name:    "error - create model API failure",
-			Command: []string{"model", "create", "test-model", "--model-provider", modelProviderID1, "--context-window", "4096"},
+			Command: []string{"model", "create", "test-model", "--provider", modelProviderID1, "--context-window", "4096"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				mockClient.Model.EXPECT().CreateModel(
 					gomock.Any(),
@@ -91,7 +92,7 @@ func TestModelCreate(t *testing.T) {
 		},
 		{
 			Name:    "error - model provider lookup API failure",
-			Command: []string{"model", "create", "test-model", "--model-provider", "openai-dev", "--context-window", "4096"},
+			Command: []string{"model", "create", "test-model", "--provider", "openai-dev", "--context-window", "4096"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				mockClient.ModelProvider.EXPECT().ListModelProviders(
 					gomock.Any(),
@@ -125,7 +126,7 @@ func setupModelCreateMock(mockClient *api_client.MockClient, name, modelProvider
 					ModelProviderId: modelProviderID,
 				},
 				Spec: &v1.ModelSpec{
-					Name: name,
+					Name:          name,
 					ContextWindow: contextWindow,
 					Enabled:       true,
 					Capabilities:  []v1.ModelCapability{v1.ModelCapability_MODEL_CAPABILITY_IMAGE},

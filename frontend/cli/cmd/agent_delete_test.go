@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -75,7 +76,7 @@ func TestAgentDelete(t *testing.T) {
 				setupAgentDeletionMock(mockClient, agentID1)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete agent coder? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete agent coder? (y/n): "),
 			},
 		},
 		{
@@ -87,7 +88,7 @@ func TestAgentDelete(t *testing.T) {
 				// No deletion mocks needed since operation should be cancelled
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete agent coder? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete agent coder? (y/n): "),
 			},
 		},
 		{
@@ -101,7 +102,7 @@ func TestAgentDelete(t *testing.T) {
 				setupAgentDeletionMock(mockClient, agentID2)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete agents coder architect? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete agents coder architect? (y/n): "),
 			},
 		},
 		{

@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -24,7 +25,7 @@ func TestModelProviderCreate(t *testing.T) {
 				setupModelProviderCreationMock(mockClient, "my-openai", v1.ModelProviderType_MODEL_PROVIDER_TYPE_OPENAI, "sk-test123", providerID)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(providerID),
+				Stdout: conv.Ptr(fmt.Sprintln(providerID)),
 			},
 		},
 		{
@@ -37,7 +38,7 @@ func TestModelProviderCreate(t *testing.T) {
 				"ANTHROPIC_API_KEY": "sk-ant-env-test123",
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(providerID),
+				Stdout: conv.Ptr(fmt.Sprintln(providerID)),
 			},
 		},
 		{
@@ -50,7 +51,7 @@ func TestModelProviderCreate(t *testing.T) {
 				"OPENAI_API_KEY": "sk-env-should-not-be-used",
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(providerID),
+				Stdout: conv.Ptr(fmt.Sprintln(providerID)),
 			},
 		},
 		{

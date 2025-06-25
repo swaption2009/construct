@@ -6,12 +6,18 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
 
 func TestAgentGet(t *testing.T) {
-	setup := &TestSetup{}
+	setup := &TestSetup{
+		CmpOptions: []cmp.Option{
+			cmpopts.IgnoreFields(AgentDisplay{}, "CreatedAt"),
+		},
+	}
 
 	agentID1 := uuid.New().String()
 	agentID2 := uuid.New().String()
@@ -22,18 +28,17 @@ func TestAgentGet(t *testing.T) {
 			Name:    "success - get agent by name",
 			Command: []string{"agent", "get", "coder"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
-				setupAgentLookupForGetMock(mockClient, "coder", agentID1)
+				setupAgentNameLookup(mockClient, "coder", agentID1, modelID)
+				setupModelNameLookup(mockClient, "gpt-4", modelID)
 				setupAgentGetMock(mockClient, agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID, []string{})
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					&AgentDisplay{
-						ID:           agentID1,
-						Name:         "coder",
-						Description:  "Description for coder",
-						Instructions: "A helpful coding assistant",
-						Model:        modelID,
-					},
+				DisplayedObjects: &AgentDisplay{
+					ID:           agentID1,
+					Name:         "coder",
+					Description:  "Description for coder",
+					Instructions: "A helpful coding assistant",
+					Model:        "gpt-4",
 				},
 			},
 		},
@@ -41,17 +46,16 @@ func TestAgentGet(t *testing.T) {
 			Name:    "success - get agent by ID",
 			Command: []string{"agent", "get", agentID1},
 			SetupMocks: func(mockClient *api_client.MockClient) {
+				setupModelNameLookup(mockClient, "gpt-4", modelID)
 				setupAgentGetMock(mockClient, agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID, []string{})
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					&AgentDisplay{
-						ID:           agentID1,
-						Name:         "coder",
-						Description:  "Description for coder",
-						Instructions: "A helpful coding assistant",
-						Model:        modelID,
-					},
+				DisplayedObjects: &AgentDisplay{
+					ID:           agentID1,
+					Name:         "coder",
+					Description:  "Description for coder",
+					Instructions: "A helpful coding assistant",
+					Model:        "gpt-4",
 				},
 			},
 		},
@@ -59,19 +63,20 @@ func TestAgentGet(t *testing.T) {
 			Name:    "success - get agent with JSON output format",
 			Command: []string{"agent", "get", "coder", "--output", "json"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
-				setupAgentLookupForGetMock(mockClient, "coder", agentID1)
+				setupAgentNameLookup(mockClient, "coder", agentID1, modelID)
+				setupModelNameLookup(mockClient, "gpt-4", modelID)
 				setupAgentGetMock(mockClient, agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID, []string{})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
-				DisplayedObjects: []any{
-					&AgentDisplay{
-						ID:           agentID1,
-						Name:         "coder",
-						Description:  "Description for coder",
-						Instructions: "A helpful coding assistant",
-						Model:        modelID,
-					},
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
+				DisplayedObjects: &AgentDisplay{
+					ID:           agentID1,
+					Name:         "coder",
+					Description:  "Description for coder",
+					Instructions: "A helpful coding assistant",
+					Model:        "gpt-4",
 				},
 			},
 		},
@@ -79,19 +84,20 @@ func TestAgentGet(t *testing.T) {
 			Name:    "success - get agent with YAML output format",
 			Command: []string{"agent", "get", "coder", "--output", "yaml"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
-				setupAgentLookupForGetMock(mockClient, "coder", agentID1)
+				setupAgentNameLookup(mockClient, "coder", agentID1, modelID)
+				setupModelNameLookup(mockClient, "gpt-4", modelID)
 				setupAgentGetMock(mockClient, agentID1, "coder", "A helpful coding assistant", "Description for coder", modelID, []string{})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
-				DisplayedObjects: []any{
-					&AgentDisplay{
-						ID:           agentID1,
-						Name:         "coder",
-						Description:  "Description for coder",
-						Instructions: "A helpful coding assistant",
-						Model:        modelID,
-					},
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
+				DisplayedObjects: &AgentDisplay{
+					ID:           agentID1,
+					Name:         "coder",
+					Description:  "Description for coder",
+					Instructions: "A helpful coding assistant",
+					Model:        "gpt-4",
 				},
 			},
 		},
@@ -195,7 +201,7 @@ func TestAgentGet(t *testing.T) {
 	})
 }
 
-func setupAgentLookupForGetMock(mockClient *api_client.MockClient, agentName, agentID string) {
+func setupAgentNameLookup(mockClient *api_client.MockClient, agentName, agentID string, modelID string) {
 	mockClient.Agent.EXPECT().ListAgents(
 		gomock.Any(),
 		&connect.Request[v1.ListAgentsRequest]{
@@ -213,7 +219,8 @@ func setupAgentLookupForGetMock(mockClient *api_client.MockClient, agentName, ag
 						Id: agentID,
 					},
 					Spec: &v1.AgentSpec{
-						Name: agentName,
+						Name:    agentName,
+						ModelId: modelID,
 					},
 				},
 			},

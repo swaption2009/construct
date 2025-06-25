@@ -43,7 +43,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			Name:    "success - list models filtered by provider name",
-			Command: []string{"model", "list", "--model-provider", "openai-dev"},
+			Command: []string{"model", "list", "--provider", "openai-dev"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				setupModelProviderLookupForListMock(mockClient, "openai-dev", modelProviderID1)
 				enabled := true
@@ -66,7 +66,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			Name:    "success - list models filtered by provider ID",
-			Command: []string{"model", "list", "--model-provider", modelProviderID1},
+			Command: []string{"model", "list", "--provider", modelProviderID1},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				enabled := true
 				setupModelListMock(mockClient, &modelProviderID1, &enabled, []*v1.Model{
@@ -127,7 +127,9 @@ func TestModelList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: []*ModelDisplay{
 					{
 						Id:            modelID1,
@@ -150,7 +152,9 @@ func TestModelList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
 				DisplayedObjects: []*ModelDisplay{
 					{
 						Id:            modelID2,
@@ -176,7 +180,7 @@ func TestModelList(t *testing.T) {
 		},
 		{
 			Name:    "error - model provider not found by name",
-			Command: []string{"model", "list", "--model-provider", "nonexistent"},
+			Command: []string{"model", "list", "--provider", "nonexistent"},
 			SetupMocks: func(mockClient *api_client.MockClient) {
 				mockClient.ModelProvider.EXPECT().ListModelProviders(
 					gomock.Any(),

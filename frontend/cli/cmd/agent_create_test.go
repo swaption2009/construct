@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"go.uber.org/mock/gomock"
@@ -27,7 +28,7 @@ func TestAgentCreate(t *testing.T) {
 				setupAgentCreationMock(mockClient, "coder", "A helpful coding assistant", "", modelID, agentID)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(agentID),
+				Stdout: conv.Ptr(fmt.Sprintln(agentID)),
 			},
 		},
 		{
@@ -38,7 +39,7 @@ func TestAgentCreate(t *testing.T) {
 				setupAgentCreationMock(mockClient, "coder", "A helpful coding assistant", "An agent that helps with coding tasks", modelID, agentID)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(agentID),
+				Stdout: conv.Ptr(fmt.Sprintln(agentID)),
 			},
 		},
 		{
@@ -48,7 +49,7 @@ func TestAgentCreate(t *testing.T) {
 				setupAgentCreationMock(mockClient, "coder", "A helpful coding assistant", "", modelID, agentID)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(agentID),
+				Stdout: conv.Ptr(fmt.Sprintln(agentID)),
 			},
 		},
 		{
@@ -60,7 +61,7 @@ func TestAgentCreate(t *testing.T) {
 				setupAgentCreationMock(mockClient, "coder", "A helpful coding assistant", "", modelID, agentID)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(agentID),
+				Stdout: conv.Ptr(fmt.Sprintln(agentID)),
 			},
 		},
 		{
@@ -74,7 +75,7 @@ func TestAgentCreate(t *testing.T) {
 				fs.WriteFile("test-prompt.txt", []byte("A helpful coding assistant"), 0644)
 			},
 			Expected: TestExpectation{
-				Stdout: fmt.Sprintln(agentID),
+				Stdout: conv.Ptr(fmt.Sprintln(agentID)),
 			},
 		},
 		{
@@ -208,6 +209,7 @@ func setupAgentCreationMock(mockClient *api_client.MockClient, agentName, instru
 		Name:         agentName,
 		Instructions: instructions,
 		ModelId:      modelID,
+		Description:  description,
 	}
 
 	mockClient.Agent.EXPECT().CreateAgent(

@@ -28,19 +28,17 @@ func TestTaskGet(t *testing.T) {
 				setupTaskGetMock(mockClient, taskID1, agentID1, createdAt, updatedAt)
 			},
 			Expected: TestExpectation{
-				DisplayedObjects: []any{
-					&DisplayTask{
-						Id:        taskID1,
-						AgentId:   agentID1,
-						CreatedAt: createdAt,
-						UpdatedAt: updatedAt,
-						Usage: DisplayTaskUsage{
-							InputTokens:      1000,
-							OutputTokens:     500,
-							CacheWriteTokens: 100,
-							CacheReadTokens:  50,
-							Cost:             0.05,
-						},
+				DisplayedObjects: &DisplayTask{
+					Id:        taskID1,
+					AgentId:   agentID1,
+					CreatedAt: createdAt,
+					UpdatedAt: updatedAt,
+					Usage: DisplayTaskUsage{
+						InputTokens:      1000,
+						OutputTokens:     500,
+						CacheWriteTokens: 100,
+						CacheReadTokens:  50,
+						Cost:             0.05,
 					},
 				},
 			},
@@ -52,20 +50,20 @@ func TestTaskGet(t *testing.T) {
 				setupTaskGetMock(mockClient, taskID1, agentID1, createdAt, updatedAt)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
-				DisplayedObjects: []any{
-					&DisplayTask{
-						Id:        taskID1,
-						AgentId:   agentID1,
-						CreatedAt: createdAt,
-						UpdatedAt: updatedAt,
-						Usage: DisplayTaskUsage{
-							InputTokens:      1000,
-							OutputTokens:     500,
-							CacheWriteTokens: 100,
-							CacheReadTokens:  50,
-							Cost:             0.05,
-						},
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
+				DisplayedObjects: &DisplayTask{
+					Id:        taskID1,
+					AgentId:   agentID1,
+					CreatedAt: createdAt,
+					UpdatedAt: updatedAt,
+					Usage: DisplayTaskUsage{
+						InputTokens:      1000,
+						OutputTokens:     500,
+						CacheWriteTokens: 100,
+						CacheReadTokens:  50,
+						Cost:             0.05,
 					},
 				},
 			},
@@ -77,20 +75,20 @@ func TestTaskGet(t *testing.T) {
 				setupTaskGetMock(mockClient, taskID1, agentID1, createdAt, updatedAt)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
-				DisplayedObjects: []any{
-					&DisplayTask{
-						Id:        taskID1,
-						AgentId:   agentID1,
-						CreatedAt: createdAt,
-						UpdatedAt: updatedAt,
-						Usage: DisplayTaskUsage{
-							InputTokens:      1000,
-							OutputTokens:     500,
-							CacheWriteTokens: 100,
-							CacheReadTokens:  50,
-							Cost:             0.05,
-						},
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
+				DisplayedObjects: &DisplayTask{
+					Id:        taskID1,
+					AgentId:   agentID1,
+					CreatedAt: createdAt,
+					UpdatedAt: updatedAt,
+					Usage: DisplayTaskUsage{
+						InputTokens:      1000,
+						OutputTokens:     500,
+						CacheWriteTokens: 100,
+						CacheReadTokens:  50,
+						Cost:             0.05,
 					},
 				},
 			},

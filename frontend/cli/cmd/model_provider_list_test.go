@@ -266,7 +266,9 @@ func TestModelProviderList(t *testing.T) {
 				})
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: []*ModelProviderDisplay{
 					{
 						Id:           modelProviderID1,

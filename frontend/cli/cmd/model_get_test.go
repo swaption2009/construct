@@ -60,7 +60,9 @@ func TestModelGet(t *testing.T) {
 				setupModelGetMock(mockClient, modelID1, "llama-3.1-8b", modelProviderID1, 32768, true)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatJSON,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatJSON,
+				},
 				DisplayedObjects: &ModelDisplay{
 					Id:            modelID1,
 					Name:          "llama-3.1-8b",
@@ -79,7 +81,9 @@ func TestModelGet(t *testing.T) {
 				setupModelGetMock(mockClient, modelID1, "claude-3-5-sonnet", modelProviderID1, 200000, true)
 			},
 			Expected: TestExpectation{
-				DisplayFormat: OutputFormatYAML,
+				DisplayFormat: &RenderOptions{
+					Format: OutputFormatYAML,
+				},
 				DisplayedObjects: &ModelDisplay{
 					Id:            modelID1,
 					Name:          "claude-3-5-sonnet",

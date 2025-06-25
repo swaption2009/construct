@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
@@ -42,7 +43,7 @@ func TestTaskDelete(t *testing.T) {
 				setupTaskDeleteMock(mockClient, taskID1)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete task " + taskID1 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete task " + taskID1 + "? (y/n): "),
 			},
 		},
 		{
@@ -53,7 +54,7 @@ func TestTaskDelete(t *testing.T) {
 				// No delete mocks needed since operation should be cancelled
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete task " + taskID1 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete task " + taskID1 + "? (y/n): "),
 			},
 		},
 		{
@@ -65,7 +66,7 @@ func TestTaskDelete(t *testing.T) {
 				setupTaskDeleteMock(mockClient, taskID2)
 			},
 			Expected: TestExpectation{
-				Stdout: "Are you sure you want to delete tasks " + taskID1 + " " + taskID2 + "? (y/n): ",
+				Stdout: conv.Ptr("Are you sure you want to delete tasks " + taskID1 + " " + taskID2 + "? (y/n): "),
 			},
 		},
 		{

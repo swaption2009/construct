@@ -8,6 +8,7 @@ import (
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/frontend/cli/cmd/mocks"
+	"github.com/furisto/construct/shared/conv"
 	"github.com/google/uuid"
 	"github.com/spf13/afero"
 	"go.uber.org/mock/gomock"
@@ -36,7 +37,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/usr/local/bin/construct", []byte("binary"), 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: " ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n",
+				Stdout: conv.Ptr(" ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n"),
 			},
 		},
 		{
@@ -58,7 +59,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/usr/local/bin/construct", []byte("binary"), 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: " ✓ Service file written to /Users/testuser/Library/LaunchAgents/construct-default.plist\n ✓ Launchd service loaded\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n",
+				Stdout: conv.Ptr(" ✓ Service file written to /Users/testuser/Library/LaunchAgents/construct-default.plist\n ✓ Launchd service loaded\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n"),
 			},
 		},
 		{
@@ -79,7 +80,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/usr/local/bin/construct", []byte("binary"), 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: " ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n",
+				Stdout: conv.Ptr(" ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n"),
 			},
 		},
 		{
@@ -100,7 +101,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/usr/local/bin/construct", []byte("binary"), 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: " ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'production' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n",
+				Stdout: conv.Ptr(" ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'production' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n"),
 			},
 		},
 		{
@@ -124,7 +125,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/etc/systemd/system/construct.service", []byte("existing"), 0644)
 			},
 			Expected: TestExpectation{
-				Stdout: " ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n",
+				Stdout: conv.Ptr(" ✓ Socket file written to /etc/systemd/system/construct.socket\n ✓ Service file written to /etc/systemd/system/construct.service\n ✓ Systemd daemon reloaded\n ✓ Socket enabled\n ✓ Context 'default' created\n✓ Daemon installed successfully\n→ Next: Create a model provider with 'construct modelprovider create'\n"),
 			},
 		},
 		{
@@ -145,7 +146,7 @@ func TestDaemonInstall(t *testing.T) {
 				fs.WriteFile("/usr/local/bin/construct", []byte("binary"), 0755)
 			},
 			Expected: TestExpectation{
-				Stdout: "",
+				Stdout: conv.Ptr(""),
 			},
 		},
 		{
