@@ -16,11 +16,11 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.27
 	github.com/maypok86/otter v1.2.4
 	github.com/openai/openai-go v1.2.0
+	github.com/posthog/posthog-go v1.5.12
 	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/afero v1.14.0
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
 	github.com/zalando/go-keyring v0.2.6
-	golang.org/x/net v0.35.0
 	google.golang.org/genproto v0.0.0-20240311173647-c811ad7063a7
 	google.golang.org/protobuf v1.36.6
 	k8s.io/client-go v0.32.3
@@ -35,7 +35,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/bored-engineer/go-launchd v0.0.0-20241220214420-b514778f4f80 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
@@ -46,6 +45,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
