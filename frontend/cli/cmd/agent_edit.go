@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
-	"strings"
 
 	"connectrpc.com/connect"
 	api "github.com/furisto/construct/api/go/client"
@@ -16,28 +16,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// AgentEditSpec represents the editable structure of an agent
 type AgentEditSpec struct {
-	// Commented header to guide users
-	ID           string `yaml:"id" comment:"# Agent ID (read-only)"`
-	Name         string `yaml:"name" comment:"# Agent name"`
-	Description  string `yaml:"description,omitempty" comment:"# Agent description (optional)"`
-	Instructions string `yaml:"instructions" comment:"# System instructions/prompt"`
-	Model        string `yaml:"model" comment:"# Model name or ID"`
+	Name         string `yaml:"name"`
+	Description  string `yaml:"description"`
+	Instructions string `yaml:"instructions"`
+	Model        string `yaml:"model"`
 }
 
 func NewAgentEditCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "edit <id-or-name>",
-		Short: "Edit an agent configuration interactively using your default editor",
-		Long: `Edit an agent configuration using your default editor ($EDITOR).
+		Short: "Edit an agent in your default editor",
+		Long: `Edit an agent's configuration using your default editor ($EDITOR).
 
-This command fetches the current agent configuration, opens it as a YAML file 
-in your terminal editor, and applies any changes you make upon saving and 
-closing the editor.
-
-Similar to 'kubectl edit', this provides a powerful way to make multiple 
-changes to an agent in a single operation.`,
+This command fetches the current agent configuration and opens it as a YAML
+file in your editor. After you save and close the file, any changes will
+be applied. If $EDITOR is not set, a common editor (like code, vim, or nano)
+will be used.`,
 		Args: cobra.ExactArgs(1),
 		Example: `  # Edit agent by name
   construct agent edit "coder"
@@ -51,13 +46,11 @@ changes to an agent in a single operation.`,
 			client := getAPIClient(cmd.Context())
 			idOrName := args[0]
 
-			// Resolve agent ID
 			agentID, err := getAgentID(cmd.Context(), client, idOrName)
 			if err != nil {
 				return fmt.Errorf("failed to resolve agent %s: %w", idOrName, err)
 			}
 
-			// Fetch current agent configuration
 			agentResp, err := client.Agent().GetAgent(cmd.Context(), &connect.Request[v1.GetAgentRequest]{
 				Msg: &v1.GetAgentRequest{Id: agentID},
 			})
@@ -65,7 +58,6 @@ changes to an agent in a single operation.`,
 				return fmt.Errorf("failed to get agent %s: %w", idOrName, err)
 			}
 
-			// Fetch model information for display
 			modelResp, err := client.Model().GetModel(cmd.Context(), &connect.Request[v1.GetModelRequest]{
 				Msg: &v1.GetModelRequest{
 					Id: agentResp.Msg.Agent.Spec.ModelId,
@@ -75,53 +67,39 @@ changes to an agent in a single operation.`,
 				return fmt.Errorf("failed to get model %s: %w", agentResp.Msg.Agent.Spec.ModelId, err)
 			}
 
-			// Convert to editable spec
 			editSpec := &AgentEditSpec{
-				ID:           agentResp.Msg.Agent.Metadata.Id,
 				Name:         agentResp.Msg.Agent.Spec.Name,
 				Description:  agentResp.Msg.Agent.Spec.Description,
 				Instructions: agentResp.Msg.Agent.Spec.Instructions,
 				Model:        modelResp.Msg.Model.Spec.Name,
 			}
 
-			// Save original spec for comparison
 			originalSpec := *editSpec
 
-			// Create temporary file with YAML content
 			tempFile, err := createTempYAMLFile(editSpec)
 			if err != nil {
 				return fmt.Errorf("failed to create temporary file: %w", err)
 			}
 			defer os.Remove(tempFile)
 
-			// Open editor
 			if err := openEditor(tempFile); err != nil {
 				return fmt.Errorf("failed to open editor: %w", err)
 			}
 
-			// Parse edited content
 			editedSpec, err := parseYAMLFile(tempFile)
 			if err != nil {
 				return fmt.Errorf("failed to parse edited content: %w", err)
 			}
 
-			// Check if any changes were made
 			if reflect.DeepEqual(originalSpec, *editedSpec) {
 				fmt.Fprintln(cmd.OutOrStdout(), "No changes made.")
 				return nil
 			}
 
-			// Validate that ID hasn't changed
-			if editedSpec.ID != originalSpec.ID {
-				return fmt.Errorf("agent ID cannot be modified")
-			}
-
-			// Apply the changes
 			if err := applyAgentChanges(cmd.Context(), client, agentResp.Msg.Agent, editedSpec); err != nil {
 				return fmt.Errorf("failed to apply changes: %w", err)
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "agent.construct.ai/%s edited\n", editedSpec.Name)
 			return nil
 		},
 	}
@@ -130,33 +108,27 @@ changes to an agent in a single operation.`,
 }
 
 func createTempYAMLFile(spec *AgentEditSpec) (string, error) {
-	// Create temporary file
 	tempFile, err := os.CreateTemp("", "construct-agent-*.yaml")
 	if err != nil {
 		return "", err
 	}
 	defer tempFile.Close()
 
-	// Create YAML content with helpful comments
-	content := fmt.Sprintf(`# Please edit the object below. Lines beginning with a '#' will be ignored,
+	header := `# Please edit the object below. Lines beginning with a '#' will be ignored,
 # and an empty file will abort the edit. If an error occurs while saving this file will be
 # reopened with the relevant failures.
 #
-id: %s
-name: %s
-description: %s
-instructions: |
-%s
-model: %s
-`,
-		spec.ID,
-		spec.Name,
-		spec.Description,
-		indentString(spec.Instructions, "  "),
-		spec.Model,
-	)
+`
+	if _, err := tempFile.WriteString(header); err != nil {
+		return "", err
+	}
 
-	if _, err := tempFile.WriteString(content); err != nil {
+	yamlData, err := yaml.Marshal(spec)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := tempFile.Write(yamlData); err != nil {
 		return "", err
 	}
 
@@ -166,7 +138,7 @@ model: %s
 func openEditor(filename string) error {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		editors := []string{"code", "cursor", "vim", "nano", "emacs", "vi"}
+		editors := []string{"code", "code-insiders", "cursor", "subl", "atom", "vim", "nano", "emacs", "vi"}
 		for _, e := range editors {
 			if _, err := exec.LookPath(e); err == nil {
 				editor = e
@@ -179,7 +151,14 @@ func openEditor(filename string) error {
 		return fmt.Errorf("no editor found. Please set the EDITOR environment variable")
 	}
 
-	cmd := exec.Command(editor, filename)
+	var cmd *exec.Cmd
+	switch filepath.Base(editor) {
+	case "code", "code-insiders", "cursor", "subl", "atom":
+		cmd = exec.Command(editor, "--wait", filename)
+	default:
+		cmd = exec.Command(editor, filename)
+	}
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -198,7 +177,6 @@ func parseYAMLFile(filename string) (*AgentEditSpec, error) {
 		return nil, fmt.Errorf("invalid YAML format: %w", err)
 	}
 
-	// Validate required fields
 	if spec.Name == "" {
 		return nil, fmt.Errorf("name is required")
 	}
@@ -213,10 +191,8 @@ func parseYAMLFile(filename string) (*AgentEditSpec, error) {
 }
 
 func applyAgentChanges(ctx context.Context, client *api.Client, currentAgent *v1.Agent, editedSpec *AgentEditSpec) error {
-	// Resolve model ID if name was provided
 	modelID := editedSpec.Model
 	if _, err := uuid.Parse(modelID); err != nil {
-		// It's a model name, resolve to ID
 		resolvedID, err := getModelID(ctx, client, modelID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve model %s: %w", modelID, err)
@@ -224,12 +200,10 @@ func applyAgentChanges(ctx context.Context, client *api.Client, currentAgent *v1
 		modelID = resolvedID
 	}
 
-	// Build update request
 	updateReq := &v1.UpdateAgentRequest{
 		Id: currentAgent.Metadata.Id,
 	}
 
-	// Check what fields have changed and set them in the update request
 	if editedSpec.Name != currentAgent.Spec.Name {
 		updateReq.Name = &editedSpec.Name
 	}
@@ -243,23 +217,9 @@ func applyAgentChanges(ctx context.Context, client *api.Client, currentAgent *v1
 		updateReq.ModelId = &modelID
 	}
 
-	// Apply the update
 	_, err := client.Agent().UpdateAgent(ctx, &connect.Request[v1.UpdateAgentRequest]{
 		Msg: updateReq,
 	})
 
 	return err
-}
-
-func indentString(s, indent string) string {
-	if s == "" {
-		return s
-	}
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if line != "" {
-			lines[i] = indent + line
-		}
-	}
-	return strings.Join(lines, "\n")
 }
