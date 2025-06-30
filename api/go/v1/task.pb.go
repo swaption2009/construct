@@ -990,12 +990,8 @@ func (x *SubscribeRequest) GetTaskId() string {
 }
 
 type SubscribeResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Types that are valid to be assigned to Event:
-	//
-	//	*SubscribeResponse_Message
-	//	*SubscribeResponse_ToolResult
-	Event         isSubscribeResponse_Event `protobuf_oneof:"event"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *Message               `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1030,113 +1026,11 @@ func (*SubscribeResponse) Descriptor() ([]byte, []int) {
 	return file_construct_v1_task_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *SubscribeResponse) GetEvent() isSubscribeResponse_Event {
-	if x != nil {
-		return x.Event
-	}
-	return nil
-}
-
 func (x *SubscribeResponse) GetMessage() *Message {
 	if x != nil {
-		if x, ok := x.Event.(*SubscribeResponse_Message); ok {
-			return x.Message
-		}
+		return x.Message
 	}
 	return nil
-}
-
-func (x *SubscribeResponse) GetToolResult() *ToolResultEvent {
-	if x != nil {
-		if x, ok := x.Event.(*SubscribeResponse_ToolResult); ok {
-			return x.ToolResult
-		}
-	}
-	return nil
-}
-
-type isSubscribeResponse_Event interface {
-	isSubscribeResponse_Event()
-}
-
-type SubscribeResponse_Message struct {
-	Message *Message `protobuf:"bytes,1,opt,name=message,proto3,oneof"`
-}
-
-type SubscribeResponse_ToolResult struct {
-	ToolResult *ToolResultEvent `protobuf:"bytes,2,opt,name=tool_result,json=toolResult,proto3,oneof"`
-}
-
-func (*SubscribeResponse_Message) isSubscribeResponse_Event() {}
-
-func (*SubscribeResponse_ToolResult) isSubscribeResponse_Event() {}
-
-type ToolResultEvent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ToolName      string                 `protobuf:"bytes,1,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
-	Arguments     map[string]string      `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Result        string                 `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
-	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ToolResultEvent) Reset() {
-	*x = ToolResultEvent{}
-	mi := &file_construct_v1_task_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ToolResultEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ToolResultEvent) ProtoMessage() {}
-
-func (x *ToolResultEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_task_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ToolResultEvent.ProtoReflect.Descriptor instead.
-func (*ToolResultEvent) Descriptor() ([]byte, []int) {
-	return file_construct_v1_task_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *ToolResultEvent) GetToolName() string {
-	if x != nil {
-		return x.ToolName
-	}
-	return ""
-}
-
-func (x *ToolResultEvent) GetArguments() map[string]string {
-	if x != nil {
-		return x.Arguments
-	}
-	return nil
-}
-
-func (x *ToolResultEvent) GetResult() string {
-	if x != nil {
-		return x.Result
-	}
-	return ""
-}
-
-func (x *ToolResultEvent) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
 }
 
 // Filter specifies criteria for narrowing the list of returned tasks.
@@ -1150,7 +1044,7 @@ type ListTasksRequest_Filter struct {
 
 func (x *ListTasksRequest_Filter) Reset() {
 	*x = ListTasksRequest_Filter{}
-	mi := &file_construct_v1_task_proto_msgTypes[18]
+	mi := &file_construct_v1_task_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1162,7 +1056,7 @@ func (x *ListTasksRequest_Filter) String() string {
 func (*ListTasksRequest_Filter) ProtoMessage() {}
 
 func (x *ListTasksRequest_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_task_proto_msgTypes[18]
+	mi := &file_construct_v1_task_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1255,20 +1149,9 @@ const file_construct_v1_task_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x14\n" +
 	"\x12DeleteTaskResponse\"5\n" +
 	"\x10SubscribeRequest\x12!\n" +
-	"\atask_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06taskId\"\x91\x01\n" +
-	"\x11SubscribeResponse\x121\n" +
-	"\amessage\x18\x01 \x01(\v2\x15.construct.v1.MessageH\x00R\amessage\x12@\n" +
-	"\vtool_result\x18\x02 \x01(\v2\x1d.construct.v1.ToolResultEventH\x00R\n" +
-	"toolResultB\a\n" +
-	"\x05event\"\xee\x01\n" +
-	"\x0fToolResultEvent\x12#\n" +
-	"\ttool_name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\btoolName\x12J\n" +
-	"\targuments\x18\x02 \x03(\v2,.construct.v1.ToolResultEvent.ArgumentsEntryR\targuments\x12\x16\n" +
-	"\x06result\x18\x03 \x01(\tR\x06result\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\x1a<\n" +
-	"\x0eArgumentsEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*n\n" +
+	"\atask_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06taskId\"D\n" +
+	"\x11SubscribeResponse\x12/\n" +
+	"\amessage\x18\x01 \x01(\v2\x15.construct.v1.MessageR\amessage*n\n" +
 	"\tTaskPhase\x12\x1a\n" +
 	"\x16TASK_PHASE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fTASK_PHASE_IDLE\x10\x01\x12\x16\n" +
@@ -1298,7 +1181,7 @@ func file_construct_v1_task_proto_rawDescGZIP() []byte {
 }
 
 var file_construct_v1_task_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_construct_v1_task_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_construct_v1_task_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_construct_v1_task_proto_goTypes = []any{
 	(TaskPhase)(0),                  // 0: construct.v1.TaskPhase
 	(*Task)(nil),                    // 1: construct.v1.Task
@@ -1318,50 +1201,46 @@ var file_construct_v1_task_proto_goTypes = []any{
 	(*DeleteTaskResponse)(nil),      // 15: construct.v1.DeleteTaskResponse
 	(*SubscribeRequest)(nil),        // 16: construct.v1.SubscribeRequest
 	(*SubscribeResponse)(nil),       // 17: construct.v1.SubscribeResponse
-	(*ToolResultEvent)(nil),         // 18: construct.v1.ToolResultEvent
-	(*ListTasksRequest_Filter)(nil), // 19: construct.v1.ListTasksRequest.Filter
-	nil,                             // 20: construct.v1.ToolResultEvent.ArgumentsEntry
-	(*timestamppb.Timestamp)(nil),   // 21: google.protobuf.Timestamp
-	(SortField)(0),                  // 22: construct.v1.SortField
-	(SortOrder)(0),                  // 23: construct.v1.SortOrder
-	(*Message)(nil),                 // 24: construct.v1.Message
+	(*ListTasksRequest_Filter)(nil), // 18: construct.v1.ListTasksRequest.Filter
+	(*timestamppb.Timestamp)(nil),   // 19: google.protobuf.Timestamp
+	(SortField)(0),                  // 20: construct.v1.SortField
+	(SortOrder)(0),                  // 21: construct.v1.SortOrder
+	(*Message)(nil),                 // 22: construct.v1.Message
 }
 var file_construct_v1_task_proto_depIdxs = []int32{
 	2,  // 0: construct.v1.Task.metadata:type_name -> construct.v1.TaskMetadata
 	3,  // 1: construct.v1.Task.spec:type_name -> construct.v1.TaskSpec
 	4,  // 2: construct.v1.Task.status:type_name -> construct.v1.TaskStatus
-	21, // 3: construct.v1.TaskMetadata.created_at:type_name -> google.protobuf.Timestamp
-	21, // 4: construct.v1.TaskMetadata.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 3: construct.v1.TaskMetadata.created_at:type_name -> google.protobuf.Timestamp
+	19, // 4: construct.v1.TaskMetadata.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 5: construct.v1.TaskSpec.desired_phase:type_name -> construct.v1.TaskPhase
 	5,  // 6: construct.v1.TaskStatus.usage:type_name -> construct.v1.TaskUsage
 	0,  // 7: construct.v1.TaskStatus.phase:type_name -> construct.v1.TaskPhase
 	1,  // 8: construct.v1.CreateTaskResponse.task:type_name -> construct.v1.Task
 	1,  // 9: construct.v1.GetTaskResponse.task:type_name -> construct.v1.Task
-	19, // 10: construct.v1.ListTasksRequest.filter:type_name -> construct.v1.ListTasksRequest.Filter
-	22, // 11: construct.v1.ListTasksRequest.sort_field:type_name -> construct.v1.SortField
-	23, // 12: construct.v1.ListTasksRequest.sort_order:type_name -> construct.v1.SortOrder
+	18, // 10: construct.v1.ListTasksRequest.filter:type_name -> construct.v1.ListTasksRequest.Filter
+	20, // 11: construct.v1.ListTasksRequest.sort_field:type_name -> construct.v1.SortField
+	21, // 12: construct.v1.ListTasksRequest.sort_order:type_name -> construct.v1.SortOrder
 	1,  // 13: construct.v1.ListTasksResponse.tasks:type_name -> construct.v1.Task
 	1,  // 14: construct.v1.UpdateTaskResponse.task:type_name -> construct.v1.Task
-	24, // 15: construct.v1.SubscribeResponse.message:type_name -> construct.v1.Message
-	18, // 16: construct.v1.SubscribeResponse.tool_result:type_name -> construct.v1.ToolResultEvent
-	20, // 17: construct.v1.ToolResultEvent.arguments:type_name -> construct.v1.ToolResultEvent.ArgumentsEntry
-	6,  // 18: construct.v1.TaskService.CreateTask:input_type -> construct.v1.CreateTaskRequest
-	8,  // 19: construct.v1.TaskService.GetTask:input_type -> construct.v1.GetTaskRequest
-	10, // 20: construct.v1.TaskService.ListTasks:input_type -> construct.v1.ListTasksRequest
-	12, // 21: construct.v1.TaskService.UpdateTask:input_type -> construct.v1.UpdateTaskRequest
-	14, // 22: construct.v1.TaskService.DeleteTask:input_type -> construct.v1.DeleteTaskRequest
-	16, // 23: construct.v1.TaskService.Subscribe:input_type -> construct.v1.SubscribeRequest
-	7,  // 24: construct.v1.TaskService.CreateTask:output_type -> construct.v1.CreateTaskResponse
-	9,  // 25: construct.v1.TaskService.GetTask:output_type -> construct.v1.GetTaskResponse
-	11, // 26: construct.v1.TaskService.ListTasks:output_type -> construct.v1.ListTasksResponse
-	13, // 27: construct.v1.TaskService.UpdateTask:output_type -> construct.v1.UpdateTaskResponse
-	15, // 28: construct.v1.TaskService.DeleteTask:output_type -> construct.v1.DeleteTaskResponse
-	17, // 29: construct.v1.TaskService.Subscribe:output_type -> construct.v1.SubscribeResponse
-	24, // [24:30] is the sub-list for method output_type
-	18, // [18:24] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	22, // 15: construct.v1.SubscribeResponse.message:type_name -> construct.v1.Message
+	6,  // 16: construct.v1.TaskService.CreateTask:input_type -> construct.v1.CreateTaskRequest
+	8,  // 17: construct.v1.TaskService.GetTask:input_type -> construct.v1.GetTaskRequest
+	10, // 18: construct.v1.TaskService.ListTasks:input_type -> construct.v1.ListTasksRequest
+	12, // 19: construct.v1.TaskService.UpdateTask:input_type -> construct.v1.UpdateTaskRequest
+	14, // 20: construct.v1.TaskService.DeleteTask:input_type -> construct.v1.DeleteTaskRequest
+	16, // 21: construct.v1.TaskService.Subscribe:input_type -> construct.v1.SubscribeRequest
+	7,  // 22: construct.v1.TaskService.CreateTask:output_type -> construct.v1.CreateTaskResponse
+	9,  // 23: construct.v1.TaskService.GetTask:output_type -> construct.v1.GetTaskResponse
+	11, // 24: construct.v1.TaskService.ListTasks:output_type -> construct.v1.ListTasksResponse
+	13, // 25: construct.v1.TaskService.UpdateTask:output_type -> construct.v1.UpdateTaskResponse
+	15, // 26: construct.v1.TaskService.DeleteTask:output_type -> construct.v1.DeleteTaskResponse
+	17, // 27: construct.v1.TaskService.Subscribe:output_type -> construct.v1.SubscribeResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_construct_v1_task_proto_init() }
@@ -1374,18 +1253,14 @@ func file_construct_v1_task_proto_init() {
 	file_construct_v1_task_proto_msgTypes[2].OneofWrappers = []any{}
 	file_construct_v1_task_proto_msgTypes[9].OneofWrappers = []any{}
 	file_construct_v1_task_proto_msgTypes[11].OneofWrappers = []any{}
-	file_construct_v1_task_proto_msgTypes[16].OneofWrappers = []any{
-		(*SubscribeResponse_Message)(nil),
-		(*SubscribeResponse_ToolResult)(nil),
-	}
-	file_construct_v1_task_proto_msgTypes[18].OneofWrappers = []any{}
+	file_construct_v1_task_proto_msgTypes[17].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_construct_v1_task_proto_rawDesc), len(file_construct_v1_task_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   20,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

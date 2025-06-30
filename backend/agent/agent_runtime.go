@@ -221,21 +221,31 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		return err
 	}
 
-	err = rt.callTools(ctx, task, message.Content)
-	if err != nil {
-		return err
-	}
-
 	protoMessage, err := ConvertMemoryMessageToProto(newMessage)
 	if err != nil {
 		return err
 	}
 
 	rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
-		Event: &v1.SubscribeResponse_Message{
-			Message: protoMessage,
-		},
+		Message: protoMessage,
 	})
+
+	toolMessages, err := rt.callTools(ctx, task, message.Content)
+	if err != nil {
+		return err
+	}
+
+	for _, toolMessage := range toolMessages {
+		protoMessage, err := ConvertMemoryMessageToProto(toolMessage)
+		if err != nil {
+			return err
+		}
+
+		rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
+			Message: protoMessage,
+		})
+	}
+
 	rt.TriggerReconciliation(taskID)
 
 	return nil
@@ -442,7 +452,7 @@ func (rt *Runtime) saveResponse(ctx context.Context, taskID uuid.UUID, processed
 	return newMessage, nil
 }
 
-func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []model.ContentBlock) error {
+func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []model.ContentBlock) ([]*memory.Message, error) {
 	var toolResults []codeact.InterpreterToolResult
 
 	for _, block := range content {
@@ -457,7 +467,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 		}
 
 		os.WriteFile("/tmp/tool_call.json", []byte(toolCall.Args), 0644)
-		result, err := rt.interpreter.Interpret(ctx, afero.NewBasePathFs(afero.NewOsFs(), task.ProjectDirectory), toolCall.Args)
+		result, err := rt.interpreter.Interpret(ctx, afero.NewOsFs(), toolCall.Args)
 
 		toolResults = append(toolResults, codeact.InterpreterToolResult{
 			ID:     toolCall.ID,
@@ -466,12 +476,13 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 		})
 	}
 
+	var toolMessages []*memory.Message
 	if len(toolResults) > 0 {
 		toolBlocks := make([]types.MessageBlock, 0, len(toolResults))
 		for _, result := range toolResults {
 			jsonResult, err := json.Marshal(result)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			toolBlocks = append(toolBlocks, types.MessageBlock{
@@ -480,7 +491,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 			})
 		}
 
-		_, err := rt.memory.Message.Create().
+		toolMessage, err := rt.memory.Message.Create().
 			SetTaskID(task.ID).
 			SetSource(types.MessageSourceSystem).
 			SetContent(&types.MessageContent{
@@ -489,11 +500,12 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 			Save(ctx)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
+		toolMessages = append(toolMessages, toolMessage)
 	}
 
-	return nil
+	return toolMessages, nil
 }
 
 func (rt *Runtime) modelProviderAPI(m *memory.Model) (model.ModelProvider, error) {

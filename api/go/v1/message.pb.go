@@ -344,6 +344,7 @@ type MessagePart struct {
 	// Types that are valid to be assigned to Data:
 	//
 	//	*MessagePart_Text_
+	//	*MessagePart_ToolResult_
 	Data          isMessagePart_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -395,6 +396,15 @@ func (x *MessagePart) GetText() *MessagePart_Text {
 	return nil
 }
 
+func (x *MessagePart) GetToolResult() *MessagePart_ToolResult {
+	if x != nil {
+		if x, ok := x.Data.(*MessagePart_ToolResult_); ok {
+			return x.ToolResult
+		}
+	}
+	return nil
+}
+
 type isMessagePart_Data interface {
 	isMessagePart_Data()
 }
@@ -404,7 +414,14 @@ type MessagePart_Text_ struct {
 	Text *MessagePart_Text `protobuf:"bytes,1,opt,name=text,proto3,oneof"`
 }
 
+type MessagePart_ToolResult_ struct {
+	// tool_result contains the result of a tool call.
+	ToolResult *MessagePart_ToolResult `protobuf:"bytes,2,opt,name=tool_result,json=toolResult,proto3,oneof"`
+}
+
 func (*MessagePart_Text_) isMessagePart_Data() {}
+
+func (*MessagePart_ToolResult_) isMessagePart_Data() {}
 
 // MessageUsage tracks resource consumption and associated costs for generating a message.
 type MessageUsage struct {
@@ -1046,6 +1063,74 @@ func (x *MessagePart_Text) GetContent() string {
 	return ""
 }
 
+type MessagePart_ToolResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToolName      string                 `protobuf:"bytes,1,opt,name=tool_name,json=toolName,proto3" json:"tool_name,omitempty"`
+	Arguments     map[string]string      `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Result        string                 `protobuf:"bytes,3,opt,name=result,proto3" json:"result,omitempty"`
+	Error         string                 `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MessagePart_ToolResult) Reset() {
+	*x = MessagePart_ToolResult{}
+	mi := &file_construct_v1_message_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessagePart_ToolResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessagePart_ToolResult) ProtoMessage() {}
+
+func (x *MessagePart_ToolResult) ProtoReflect() protoreflect.Message {
+	mi := &file_construct_v1_message_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessagePart_ToolResult.ProtoReflect.Descriptor instead.
+func (*MessagePart_ToolResult) Descriptor() ([]byte, []int) {
+	return file_construct_v1_message_proto_rawDescGZIP(), []int{4, 1}
+}
+
+func (x *MessagePart_ToolResult) GetToolName() string {
+	if x != nil {
+		return x.ToolName
+	}
+	return ""
+}
+
+func (x *MessagePart_ToolResult) GetArguments() map[string]string {
+	if x != nil {
+		return x.Arguments
+	}
+	return nil
+}
+
+func (x *MessagePart_ToolResult) GetResult() string {
+	if x != nil {
+		return x.Result
+	}
+	return ""
+}
+
+func (x *MessagePart_ToolResult) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 // Filter specifies criteria for narrowing the list of returned messages.
 type ListMessagesRequest_Filter struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1061,7 +1146,7 @@ type ListMessagesRequest_Filter struct {
 
 func (x *ListMessagesRequest_Filter) Reset() {
 	*x = ListMessagesRequest_Filter{}
-	mi := &file_construct_v1_message_proto_msgTypes[17]
+	mi := &file_construct_v1_message_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1073,7 +1158,7 @@ func (x *ListMessagesRequest_Filter) String() string {
 func (*ListMessagesRequest_Filter) ProtoMessage() {}
 
 func (x *ListMessagesRequest_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[17]
+	mi := &file_construct_v1_message_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1134,11 +1219,22 @@ const file_construct_v1_message_proto_rawDesc = "" +
 	"\vMessageSpec\x123\n" +
 	"\acontent\x18\x01 \x03(\v2\x19.construct.v1.MessagePartR\acontent\"A\n" +
 	"\rMessageStatus\x120\n" +
-	"\x05usage\x18\x01 \x01(\v2\x1a.construct.v1.MessageUsageR\x05usage\"z\n" +
+	"\x05usage\x18\x01 \x01(\v2\x1a.construct.v1.MessageUsageR\x05usage\"\xb6\x03\n" +
 	"\vMessagePart\x124\n" +
-	"\x04text\x18\x01 \x01(\v2\x1e.construct.v1.MessagePart.TextH\x00R\x04text\x1a-\n" +
+	"\x04text\x18\x01 \x01(\v2\x1e.construct.v1.MessagePart.TextH\x00R\x04text\x12G\n" +
+	"\vtool_result\x18\x02 \x01(\v2$.construct.v1.MessagePart.ToolResultH\x00R\n" +
+	"toolResult\x1a-\n" +
 	"\x04Text\x12%\n" +
-	"\acontent\x18\x01 \x01(\tB\v\xbaH\br\x06\x10\x01\x18\x80\x80\x04R\acontentB\x06\n" +
+	"\acontent\x18\x01 \x01(\tB\v\xbaH\br\x06\x10\x01\x18\x80\x80\x04R\acontent\x1a\xf0\x01\n" +
+	"\n" +
+	"ToolResult\x12#\n" +
+	"\ttool_name\x18\x01 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\btoolName\x12Q\n" +
+	"\targuments\x18\x02 \x03(\v23.construct.v1.MessagePart.ToolResult.ArgumentsEntryR\targuments\x12\x16\n" +
+	"\x06result\x18\x03 \x01(\tR\x06result\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x1a<\n" +
+	"\x0eArgumentsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
 	"\x04data\"\xc4\x01\n" +
 	"\fMessageUsage\x12!\n" +
 	"\finput_tokens\x18\x01 \x01(\x03R\vinputTokens\x12#\n" +
@@ -1217,7 +1313,7 @@ func file_construct_v1_message_proto_rawDescGZIP() []byte {
 }
 
 var file_construct_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_construct_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_construct_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_construct_v1_message_proto_goTypes = []any{
 	(MessageRole)(0),                   // 0: construct.v1.MessageRole
 	(*Message)(nil),                    // 1: construct.v1.Message
@@ -1237,46 +1333,50 @@ var file_construct_v1_message_proto_goTypes = []any{
 	(*DeleteMessageRequest)(nil),       // 15: construct.v1.DeleteMessageRequest
 	(*DeleteMessageResponse)(nil),      // 16: construct.v1.DeleteMessageResponse
 	(*MessagePart_Text)(nil),           // 17: construct.v1.MessagePart.Text
-	(*ListMessagesRequest_Filter)(nil), // 18: construct.v1.ListMessagesRequest.Filter
-	(*timestamppb.Timestamp)(nil),      // 19: google.protobuf.Timestamp
-	(SortField)(0),                     // 20: construct.v1.SortField
-	(SortOrder)(0),                     // 21: construct.v1.SortOrder
+	(*MessagePart_ToolResult)(nil),     // 18: construct.v1.MessagePart.ToolResult
+	nil,                                // 19: construct.v1.MessagePart.ToolResult.ArgumentsEntry
+	(*ListMessagesRequest_Filter)(nil), // 20: construct.v1.ListMessagesRequest.Filter
+	(*timestamppb.Timestamp)(nil),      // 21: google.protobuf.Timestamp
+	(SortField)(0),                     // 22: construct.v1.SortField
+	(SortOrder)(0),                     // 23: construct.v1.SortOrder
 }
 var file_construct_v1_message_proto_depIdxs = []int32{
 	2,  // 0: construct.v1.Message.metadata:type_name -> construct.v1.MessageMetadata
 	3,  // 1: construct.v1.Message.spec:type_name -> construct.v1.MessageSpec
 	4,  // 2: construct.v1.Message.status:type_name -> construct.v1.MessageStatus
-	19, // 3: construct.v1.MessageMetadata.created_at:type_name -> google.protobuf.Timestamp
-	19, // 4: construct.v1.MessageMetadata.updated_at:type_name -> google.protobuf.Timestamp
+	21, // 3: construct.v1.MessageMetadata.created_at:type_name -> google.protobuf.Timestamp
+	21, // 4: construct.v1.MessageMetadata.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 5: construct.v1.MessageMetadata.role:type_name -> construct.v1.MessageRole
 	5,  // 6: construct.v1.MessageSpec.content:type_name -> construct.v1.MessagePart
 	6,  // 7: construct.v1.MessageStatus.usage:type_name -> construct.v1.MessageUsage
 	17, // 8: construct.v1.MessagePart.text:type_name -> construct.v1.MessagePart.Text
-	5,  // 9: construct.v1.CreateMessageRequest.content:type_name -> construct.v1.MessagePart
-	1,  // 10: construct.v1.CreateMessageResponse.message:type_name -> construct.v1.Message
-	1,  // 11: construct.v1.GetMessageResponse.message:type_name -> construct.v1.Message
-	18, // 12: construct.v1.ListMessagesRequest.filter:type_name -> construct.v1.ListMessagesRequest.Filter
-	20, // 13: construct.v1.ListMessagesRequest.sort_field:type_name -> construct.v1.SortField
-	21, // 14: construct.v1.ListMessagesRequest.sort_order:type_name -> construct.v1.SortOrder
-	1,  // 15: construct.v1.ListMessagesResponse.messages:type_name -> construct.v1.Message
-	5,  // 16: construct.v1.UpdateMessageRequest.content:type_name -> construct.v1.MessagePart
-	1,  // 17: construct.v1.UpdateMessageResponse.message:type_name -> construct.v1.Message
-	0,  // 18: construct.v1.ListMessagesRequest.Filter.roles:type_name -> construct.v1.MessageRole
-	7,  // 19: construct.v1.MessageService.CreateMessage:input_type -> construct.v1.CreateMessageRequest
-	9,  // 20: construct.v1.MessageService.GetMessage:input_type -> construct.v1.GetMessageRequest
-	11, // 21: construct.v1.MessageService.ListMessages:input_type -> construct.v1.ListMessagesRequest
-	13, // 22: construct.v1.MessageService.UpdateMessage:input_type -> construct.v1.UpdateMessageRequest
-	15, // 23: construct.v1.MessageService.DeleteMessage:input_type -> construct.v1.DeleteMessageRequest
-	8,  // 24: construct.v1.MessageService.CreateMessage:output_type -> construct.v1.CreateMessageResponse
-	10, // 25: construct.v1.MessageService.GetMessage:output_type -> construct.v1.GetMessageResponse
-	12, // 26: construct.v1.MessageService.ListMessages:output_type -> construct.v1.ListMessagesResponse
-	14, // 27: construct.v1.MessageService.UpdateMessage:output_type -> construct.v1.UpdateMessageResponse
-	16, // 28: construct.v1.MessageService.DeleteMessage:output_type -> construct.v1.DeleteMessageResponse
-	24, // [24:29] is the sub-list for method output_type
-	19, // [19:24] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	18, // 9: construct.v1.MessagePart.tool_result:type_name -> construct.v1.MessagePart.ToolResult
+	5,  // 10: construct.v1.CreateMessageRequest.content:type_name -> construct.v1.MessagePart
+	1,  // 11: construct.v1.CreateMessageResponse.message:type_name -> construct.v1.Message
+	1,  // 12: construct.v1.GetMessageResponse.message:type_name -> construct.v1.Message
+	20, // 13: construct.v1.ListMessagesRequest.filter:type_name -> construct.v1.ListMessagesRequest.Filter
+	22, // 14: construct.v1.ListMessagesRequest.sort_field:type_name -> construct.v1.SortField
+	23, // 15: construct.v1.ListMessagesRequest.sort_order:type_name -> construct.v1.SortOrder
+	1,  // 16: construct.v1.ListMessagesResponse.messages:type_name -> construct.v1.Message
+	5,  // 17: construct.v1.UpdateMessageRequest.content:type_name -> construct.v1.MessagePart
+	1,  // 18: construct.v1.UpdateMessageResponse.message:type_name -> construct.v1.Message
+	19, // 19: construct.v1.MessagePart.ToolResult.arguments:type_name -> construct.v1.MessagePart.ToolResult.ArgumentsEntry
+	0,  // 20: construct.v1.ListMessagesRequest.Filter.roles:type_name -> construct.v1.MessageRole
+	7,  // 21: construct.v1.MessageService.CreateMessage:input_type -> construct.v1.CreateMessageRequest
+	9,  // 22: construct.v1.MessageService.GetMessage:input_type -> construct.v1.GetMessageRequest
+	11, // 23: construct.v1.MessageService.ListMessages:input_type -> construct.v1.ListMessagesRequest
+	13, // 24: construct.v1.MessageService.UpdateMessage:input_type -> construct.v1.UpdateMessageRequest
+	15, // 25: construct.v1.MessageService.DeleteMessage:input_type -> construct.v1.DeleteMessageRequest
+	8,  // 26: construct.v1.MessageService.CreateMessage:output_type -> construct.v1.CreateMessageResponse
+	10, // 27: construct.v1.MessageService.GetMessage:output_type -> construct.v1.GetMessageResponse
+	12, // 28: construct.v1.MessageService.ListMessages:output_type -> construct.v1.ListMessagesResponse
+	14, // 29: construct.v1.MessageService.UpdateMessage:output_type -> construct.v1.UpdateMessageResponse
+	16, // 30: construct.v1.MessageService.DeleteMessage:output_type -> construct.v1.DeleteMessageResponse
+	26, // [26:31] is the sub-list for method output_type
+	21, // [21:26] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_construct_v1_message_proto_init() }
@@ -1288,16 +1388,17 @@ func file_construct_v1_message_proto_init() {
 	file_construct_v1_message_proto_msgTypes[1].OneofWrappers = []any{}
 	file_construct_v1_message_proto_msgTypes[4].OneofWrappers = []any{
 		(*MessagePart_Text_)(nil),
+		(*MessagePart_ToolResult_)(nil),
 	}
 	file_construct_v1_message_proto_msgTypes[10].OneofWrappers = []any{}
-	file_construct_v1_message_proto_msgTypes[17].OneofWrappers = []any{}
+	file_construct_v1_message_proto_msgTypes[19].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_construct_v1_message_proto_rawDesc), len(file_construct_v1_message_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   18,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

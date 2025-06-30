@@ -61,7 +61,8 @@ func NewMessageHub(db *memory.Client) (*EventHub, error) {
 
 func (h *EventHub) Publish(taskID uuid.UUID, message *v1.SubscribeResponse) {
 	h.mu.RLock()
-	subscribers := h.subscribers[taskID]
+	subscribers := make([]*subscription, len(h.subscribers[taskID]))
+	copy(subscribers, h.subscribers[taskID])
 	h.mu.RUnlock()
 
 	for _, subscriber := range subscribers {
@@ -107,9 +108,7 @@ func (h *EventHub) Subscribe(ctx context.Context, taskID uuid.UUID) iter.Seq2[*v
 				}
 			}
 			if !yield(&v1.SubscribeResponse{
-				Event: &v1.SubscribeResponse_Message{
-					Message: protoMessage,
-				},
+				Message: protoMessage,
 			}, nil) {
 				return
 			}

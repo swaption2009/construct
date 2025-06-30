@@ -107,11 +107,33 @@ func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
 		role = v1.MessageRole_MESSAGE_ROLE_UNSPECIFIED
 	}
 
-	text := ""
+	var contentParts []*v1.MessagePart
 	for _, block := range m.Content.Blocks {
-		if block.Kind == types.MessageBlockKindText {
-			text = block.Payload
-			break
+		switch block.Kind {
+		case types.MessageBlockKindText:
+			contentParts = append(contentParts, &v1.MessagePart{
+				Data: &v1.MessagePart_Text_{
+					Text: &v1.MessagePart_Text{
+						Content: block.Payload,
+					},
+				},
+			})
+		case types.MessageBlockKindCodeInterpreterResult:
+			var interpreterResult codeact.InterpreterToolResult
+			err := json.Unmarshal([]byte(block.Payload), &interpreterResult)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal code interpreter result: %w", err)
+			}
+			
+			contentParts = append(contentParts, &v1.MessagePart{
+				Data: &v1.MessagePart_ToolResult_{
+					ToolResult: &v1.MessagePart_ToolResult{
+						ToolName: "code_interpreter",
+						Result:   interpreterResult.Output.ConsoleOutput,
+						Error:    func() string { if interpreterResult.Error != nil { return interpreterResult.Error.Error() }; return "" }(),
+					},
+				},
+			})
 		}
 	}
 
@@ -124,7 +146,6 @@ func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
 		}
 	}
 
-
 	return &v1.Message{
 		Metadata: &v1.MessageMetadata{
 			Id:        m.ID.String(),
@@ -136,15 +157,7 @@ func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
 			Role:      role,
 		},
 		Spec: &v1.MessageSpec{
-			Content: []*v1.MessagePart{
-				{
-					Data: &v1.MessagePart_Text_{
-						Text: &v1.MessagePart_Text{
-							Content: text,
-						},
-					},
-				},
-			},
+			Content: contentParts,
 		},
 		Status: &v1.MessageStatus{
 			Usage: messageUsage,

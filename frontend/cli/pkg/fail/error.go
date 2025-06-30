@@ -1,6 +1,8 @@
 package fail
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -263,6 +265,10 @@ func TransformError(err error) error {
 				"https://github.com/furisto/construct/issues/new",
 			},
 		}
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return nil
 	}
 
 	return err

@@ -170,10 +170,10 @@ message UpdateAgentRequest {
   // description is the new description for the agent (max 1000 characters, optional).
   optional string description = 3 [(buf.validate.field).string.max_len = 1000];
 
-  // instructions are the new instructions for the agent (1-10000 characters, optional).
+  // instructions are the new instructions for the agent (1-65536 characters, optional).
   optional string instructions = 4 [
     (buf.validate.field).string.min_len = 1,
-    (buf.validate.field).string.max_len = 10000
+    (buf.validate.field).string.max_len = 65536
   ];
 
   // model_id is the new model reference for the agent (UUID format, optional).

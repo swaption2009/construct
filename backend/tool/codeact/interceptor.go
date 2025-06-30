@@ -111,11 +111,20 @@ func (p *FunctionResultPublisher) Intercept(session *Session, tool Tool, inner f
 			slog.Error("failed to export result", "error", err)
 		}
 		p.EventHub.Publish(session.TaskID, &v1.SubscribeResponse{
-			Event: &v1.SubscribeResponse_ToolResult{
-				ToolResult: &v1.ToolResultEvent{
-					ToolName:  tool.Name(),
-					Arguments: arguments,
-					Result:    exported,
+			Message: &v1.Message{
+				Spec: &v1.MessageSpec{
+					Content: []*v1.MessagePart{
+						{
+							Data: &v1.MessagePart_ToolResult_{
+								ToolResult: &v1.MessagePart_ToolResult{
+									ToolName: tool.Name(),
+									Arguments: arguments,
+									Result:    exported,
+									Error:     "",
+								},
+							},
+						},
+					},
 				},
 			},
 		})
