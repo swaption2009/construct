@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
-	"text/tabwriter"
+	"regexp"
+	"strings"
 
+	"github.com/furisto/construct/frontend/cli/pkg/terminal"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -149,9 +150,7 @@ func renderTable(resources any, options *RenderOptions) error {
 		return fmt.Errorf("displayTable only supports struct types, got %v", itemType.Kind())
 	}
 
-	tw := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer tw.Flush()
-
+	// Collect headers
 	var headers []string
 	for i := 0; i < itemType.NumField(); i++ {
 		field := itemType.Field(i)
@@ -160,16 +159,22 @@ func renderTable(resources any, options *RenderOptions) error {
 		}
 	}
 
-	// print headers
-	for i, header := range headers {
-		if i > 0 {
-			fmt.Fprint(tw, "\t")
-		}
-		fmt.Fprint(tw, header)
+	if len(headers) == 0 {
+		return nil
 	}
-	fmt.Fprintln(tw)
 
-	// print values for each item
+	// First pass: collect all data and calculate column widths
+	var rows [][]string
+	widths := make([]int, len(headers))
+
+	headerRow := make([]string, len(headers))
+	for i, h := range headers {
+		headerRow[i] = terminal.Bold(h)
+		widths[i] = len(h) // Width without ANSI codes
+	}
+	rows = append(rows, headerRow)
+
+	// Add data rows and update widths
 	for _, item := range items {
 		if item.Kind() == reflect.Ptr {
 			if item.IsNil() {
@@ -178,34 +183,59 @@ func renderTable(resources any, options *RenderOptions) error {
 			item = item.Elem()
 		}
 
+		row := make([]string, len(headers))
 		for i, header := range headers {
-			if i > 0 {
-				fmt.Fprint(tw, "\t")
-			}
-
 			fieldValue := item.FieldByName(header)
+			var strVal string
+
 			if !fieldValue.IsValid() {
-				fmt.Fprint(tw, "")
-				continue
+				strVal = ""
+			} else {
+				switch fieldValue.Kind() {
+				case reflect.Ptr:
+					if fieldValue.IsNil() {
+						strVal = ""
+					} else {
+						strVal = fmt.Sprint(fieldValue.Elem().Interface())
+					}
+				case reflect.String:
+					strVal = fieldValue.String()
+				default:
+					strVal = fmt.Sprint(fieldValue.Interface())
+				}
 			}
 
-			switch fieldValue.Kind() {
-			case reflect.Ptr:
-				if fieldValue.IsNil() {
-					fmt.Fprint(tw, "")
-				} else {
-					fmt.Fprint(tw, fieldValue.Elem().Interface())
-				}
-			case reflect.String:
-				fmt.Fprint(tw, fieldValue.String())
-			default:
-				fmt.Fprint(tw, fieldValue.Interface())
+			row[i] = strVal
+			if len(strVal) > widths[i] {
+				widths[i] = len(strVal)
 			}
 		}
-		fmt.Fprintln(tw)
+		rows = append(rows, row)
+	}
+
+	// Second pass: print with proper alignment
+	for _, row := range rows {
+		for i, cell := range row {
+			if i > 0 {
+				fmt.Print("  ")
+			}
+			fmt.Print(cell)
+
+			visualLen := len(stripANSI(cell))
+			padding := widths[i] - visualLen
+			if padding > 0 {
+				fmt.Print(strings.Repeat(" ", padding))
+			}
+		}
+		fmt.Println()
 	}
 
 	return nil
+}
+
+func stripANSI(s string) string {
+	re := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	return re.ReplaceAllString(s, "")
 }
 
 func renderCard(resources any, options *RenderOptions) error {
