@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/grafana/sobek"
+	diff "github.com/sourcegraph/go-diff-patch"
 	"github.com/spf13/afero"
 
 	"github.com/furisto/construct/backend/tool/codeact"
@@ -26,12 +27,20 @@ Performs targeted modifications to existing files by replacing specific text sec
 Returns an object indicating success and details about changes made:
 %[1]s
 {
-  "success": true,
   "path": "/path/to/file",
   "replacements_made": 2,
-  "expected_replacements": 2
+  "expected_replacements": 2,
+  "patch": "--- filename\n+++ filename\n@@ -1,3 +1,3 @@\n line1\n-old content\n+new content\n line3"
 }
 %[1]s
+
+**Details:**
+- path: The absolute path of the file that was edited (same as input parameter).
+- replacements_made: Number of text replacements that were actually performed.
+- expected_replacements: Number of diff objects provided in the input array.
+- patch: A unified diff patch showing the exact changes made to the file. Only present when changes were made.
+- validation_errors: Array of specific validation errors for individual diffs (only present when validation fails). You need to resolve these errors before retrying the edit.
+- conflict_warnings: Array of potential conflicts detected between multiple edits (only present when conflicts are detected). These are not errors, but you should carefully review the result of the edit before continuing.
 
 ## CRITICAL REQUIREMENTS
 - **Exact matching**: The "old" content must match file content exactly (whitespace, indentation, line endings)
@@ -68,7 +77,7 @@ edit_file("/workspace/project/src/utils.js", [
 edit_file("/workspace/project/src/components/Button.jsx", [
   {
     "old": "import React from 'react';",
-    "new": "import React, { useState } from 'react';"
+    "new": ""
   },
   {
     "old": "function Button({ text, onClick }) {",
@@ -77,6 +86,10 @@ edit_file("/workspace/project/src/components/Button.jsx", [
   {
     "old": "<button className=\"primary-button\" onClick={onClick}>",
     "new": "<button className=\"primary-button\" onClick={onClick} disabled={disabled}>"
+  },
+  {
+    "old": "",
+    "new": "}"
   }
 ]);
 %[1]s
@@ -84,7 +97,7 @@ edit_file("/workspace/project/src/components/Button.jsx", [
 
 func NewEditFileTool() codeact.Tool {
 	return codeact.NewOnDemandTool(
-		"edit_file",
+		ToolNameEditFile,
 		fmt.Sprintf(editFileDescription, "```"),
 		editFileHandler,
 	)
@@ -114,6 +127,12 @@ type ConflictWarning struct {
 	Message      string `json:"message"`
 }
 
+type PatchInfo struct {
+	Patch        string `json:"patch"`
+	LinesAdded   int    `json:"lines_added"`
+	LinesRemoved int    `json:"lines_removed"`
+}
+
 type EditFileResult struct {
 	Success              bool                  `json:"success"`
 	Path                 string                `json:"path"`
@@ -122,6 +141,7 @@ type EditFileResult struct {
 	FailureReason        string                `json:"failure_reason,omitempty"`
 	ValidationErrors     []DiffValidationError `json:"validation_errors,omitempty"`
 	ConflictWarnings     []ConflictWarning     `json:"conflict_warnings,omitempty"`
+	PatchInfo            PatchInfo             `json:"patch_info,omitempty"`
 }
 
 func editFileHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
@@ -138,7 +158,7 @@ func editFileHandler(session *codeact.Session) func(call sobek.FunctionCall) sob
 
 		// Parse diffs array
 		var diffs []DiffPair
-		if diffsObj := diffsArg.ToObject(session.VM); diffsObj != nil {
+		if diffsObj := diffsArg.ToObject(session.VM); diffsObj != nil && diffsObj != sobek.Undefined() {
 			if lengthVal := diffsObj.Get("length"); lengthVal != nil {
 				length := int(lengthVal.ToInteger())
 				for i := 0; i < length; i++ {
@@ -175,6 +195,153 @@ func editFileHandler(session *codeact.Session) func(call sobek.FunctionCall) sob
 
 		return session.VM.ToValue(result)
 	}
+}
+
+func editFile(fsys afero.Fs, input *EditFileInput) (*EditFileResult, error) {
+	if !filepath.IsAbs(input.Path) {
+		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", input.Path)
+	}
+	path := input.Path
+
+	// Check if file exists and is not a directory
+	stat, err := fsys.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, codeact.NewError(codeact.FileNotFound, "path", path)
+		}
+		return nil, codeact.NewCustomError("error accessing file", []string{
+			"Verify that you have the permission to access the file",
+		}, "path", path, "error", err)
+	}
+
+	if stat.IsDir() {
+		return nil, codeact.NewCustomError("path is a directory", []string{
+			"Please provide a valid path to a file",
+		}, "path", path)
+	}
+
+	// Read file content
+	content, err := afero.ReadFile(fsys, path)
+	if err != nil {
+		return nil, codeact.NewCustomError("error reading file", []string{
+			"Verify that you have the permission to read the file",
+		}, "path", path, "error", err)
+	}
+
+	originalContent := string(content)
+	expectedReplacements := len(input.Diffs)
+
+	conflictWarnings := detectConflicts(input.Diffs)
+
+	newContent, replacementsMade, validationErrors := processEdits(originalContent, input.Diffs)
+	if len(validationErrors) > 0 {
+		return &EditFileResult{
+				Path:                 path,
+				ReplacementsMade:     0,
+				ExpectedReplacements: expectedReplacements,
+				ConflictWarnings:     conflictWarnings,
+				ValidationErrors:     validationErrors,
+			}, codeact.NewCustomError(fmt.Sprintf("validation failed: %d error(s) found", len(validationErrors)), []string{
+				"Please fix the validation errors and try again",
+			})
+	}
+
+	var patchInfo PatchInfo
+	if newContent != originalContent {
+		filename := filepath.Base(path)
+		patchInfo.Patch = diff.GeneratePatch(filename, originalContent, newContent)
+		patchInfo.LinesAdded, patchInfo.LinesRemoved = parseDiffStats(patchInfo.Patch)
+
+		err = afero.WriteFile(fsys, path, []byte(newContent), stat.Mode())
+		if err != nil {
+			return nil, codeact.NewCustomError("error writing file", []string{
+				"Verify that you have the permission to write to the file",
+			}, "path", path, "error", err)
+		}
+	}
+
+	return &EditFileResult{
+		Path:                 path,
+		ReplacementsMade:     replacementsMade,
+		ExpectedReplacements: expectedReplacements,
+		ConflictWarnings:     conflictWarnings,
+		PatchInfo:            patchInfo,
+	}, nil
+}
+
+// detectConflicts analyzes potential conflicts between multiple edits
+func detectConflicts(diffs []DiffPair) []ConflictWarning {
+	var warnings []ConflictWarning
+
+	for i := 0; i < len(diffs)-1; i++ {
+		for j := i + 1; j < len(diffs); j++ {
+			edit1 := diffs[i]
+			edit2 := diffs[j]
+
+			// Skip empty diffs
+			if (edit1.Old == "" && edit1.New == "") || (edit2.Old == "" && edit2.New == "") {
+				continue
+			}
+
+			// Check if edit j depends on the result of edit i
+			if edit2.Old != "" && edit1.New != "" && strings.Contains(edit2.Old, edit1.New) {
+				warnings = append(warnings, ConflictWarning{
+					Edit1Index:   i + 1,
+					Edit2Index:   j + 1,
+					ConflictType: "dependency",
+					Message:      fmt.Sprintf("Edit %d depends on result of edit %d", j+1, i+1),
+				})
+			}
+
+			// Check if both edits try to modify overlapping text regions
+			if edit1.Old != "" && edit2.Old != "" {
+				// Simple overlap detection: check if one old text contains the other
+				if strings.Contains(edit1.Old, edit2.Old) || strings.Contains(edit2.Old, edit1.Old) {
+					warnings = append(warnings, ConflictWarning{
+						Edit1Index:   i + 1,
+						Edit2Index:   j + 1,
+						ConflictType: "overlap",
+						Message:      fmt.Sprintf("Edits %d and %d may affect overlapping text regions", i+1, j+1),
+					})
+				}
+
+				// Check if both edits target the same exact text
+				if edit1.Old == edit2.Old {
+					warnings = append(warnings, ConflictWarning{
+						Edit1Index:   i + 1,
+						Edit2Index:   j + 1,
+						ConflictType: "duplicate_target",
+						Message:      fmt.Sprintf("Edits %d and %d target the same text", i+1, j+1),
+					})
+				}
+			}
+
+			// Check for potential line-level conflicts by examining line boundaries
+			if edit1.Old != "" && edit2.Old != "" {
+				edit1Lines := strings.Split(edit1.Old, "\n")
+				edit2Lines := strings.Split(edit2.Old, "\n")
+
+				// If both edits span multiple lines and share common line content
+				if len(edit1Lines) > 1 && len(edit2Lines) > 1 {
+					for _, line1 := range edit1Lines {
+						for _, line2 := range edit2Lines {
+							if strings.TrimSpace(line1) != "" && strings.TrimSpace(line1) == strings.TrimSpace(line2) {
+								warnings = append(warnings, ConflictWarning{
+									Edit1Index:   i + 1,
+									Edit2Index:   j + 1,
+									ConflictType: "line_overlap",
+									Message:      fmt.Sprintf("Edits %d and %d may affect the same line", i+1, j+1),
+								})
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return warnings
 }
 
 func processEdits(fileContent string, diffs []DiffPair) (string, int, []DiffValidationError) {
@@ -298,144 +465,30 @@ func lineTrimmedFallbackMatch(originalContent, searchContent string, startIndex 
 	return -1, -1
 }
 
-// detectConflicts analyzes potential conflicts between multiple edits
-func detectConflicts(diffs []DiffPair) []ConflictWarning {
-	var warnings []ConflictWarning
+func parseDiffStats(patch string) (linesAdded, linesRemoved int) {
+	if patch == "" {
+		return 0, 0
+	}
 
-	for i := 0; i < len(diffs)-1; i++ {
-		for j := i + 1; j < len(diffs); j++ {
-			edit1 := diffs[i]
-			edit2 := diffs[j]
+	lines := strings.Split(patch, "\n")
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
 
-			// Skip empty diffs
-			if (edit1.Old == "" && edit1.New == "") || (edit2.Old == "" && edit2.New == "") {
-				continue
+		switch line[0] {
+		case '+':
+			// Skip the +++ header line
+			if !strings.HasPrefix(line, "+++") {
+				linesAdded++
 			}
-
-			// Check if edit j depends on the result of edit i
-			if edit2.Old != "" && edit1.New != "" && strings.Contains(edit2.Old, edit1.New) {
-				warnings = append(warnings, ConflictWarning{
-					Edit1Index:   i + 1,
-					Edit2Index:   j + 1,
-					ConflictType: "dependency",
-					Message:      fmt.Sprintf("Edit %d depends on result of edit %d", j+1, i+1),
-				})
-			}
-
-			// Check if both edits try to modify overlapping text regions
-			if edit1.Old != "" && edit2.Old != "" {
-				// Simple overlap detection: check if one old text contains the other
-				if strings.Contains(edit1.Old, edit2.Old) || strings.Contains(edit2.Old, edit1.Old) {
-					warnings = append(warnings, ConflictWarning{
-						Edit1Index:   i + 1,
-						Edit2Index:   j + 1,
-						ConflictType: "overlap",
-						Message:      fmt.Sprintf("Edits %d and %d may affect overlapping text regions", i+1, j+1),
-					})
-				}
-
-				// Check if both edits target the same exact text
-				if edit1.Old == edit2.Old {
-					warnings = append(warnings, ConflictWarning{
-						Edit1Index:   i + 1,
-						Edit2Index:   j + 1,
-						ConflictType: "duplicate_target",
-						Message:      fmt.Sprintf("Edits %d and %d target the same text", i+1, j+1),
-					})
-				}
-			}
-
-			// Check for potential line-level conflicts by examining line boundaries
-			if edit1.Old != "" && edit2.Old != "" {
-				edit1Lines := strings.Split(edit1.Old, "\n")
-				edit2Lines := strings.Split(edit2.Old, "\n")
-
-				// If both edits span multiple lines and share common line content
-				if len(edit1Lines) > 1 && len(edit2Lines) > 1 {
-					for _, line1 := range edit1Lines {
-						for _, line2 := range edit2Lines {
-							if strings.TrimSpace(line1) != "" && strings.TrimSpace(line1) == strings.TrimSpace(line2) {
-								warnings = append(warnings, ConflictWarning{
-									Edit1Index:   i + 1,
-									Edit2Index:   j + 1,
-									ConflictType: "line_overlap",
-									Message:      fmt.Sprintf("Edits %d and %d may affect the same line", i+1, j+1),
-								})
-								break
-							}
-						}
-					}
-				}
+		case '-':
+			// Skip the --- header line
+			if !strings.HasPrefix(line, "---") {
+				linesRemoved++
 			}
 		}
 	}
 
-	return warnings
-}
-
-func editFile(fsys afero.Fs, input *EditFileInput) (*EditFileResult, error) {
-	if !filepath.IsAbs(input.Path) {
-		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", input.Path)
-	}
-	path := input.Path
-
-	// Check if file exists and is not a directory
-	stat, err := fsys.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, codeact.NewError(codeact.FileNotFound, "path", path)
-		}
-		return nil, codeact.NewCustomError("error accessing file", []string{
-			"Verify that you have the permission to access the file",
-		}, "path", path, "error", err)
-	}
-
-	if stat.IsDir() {
-		return nil, codeact.NewCustomError("path is a directory", []string{
-			"Please provide a valid path to a file",
-		}, "path", path)
-	}
-
-	// Read file content
-	content, err := afero.ReadFile(fsys, path)
-	if err != nil {
-		return nil, codeact.NewCustomError("error reading file", []string{
-			"Verify that you have the permission to read the file",
-		}, "path", path, "error", err)
-	}
-
-	fileContent := string(content)
-	expectedReplacements := len(input.Diffs)
-	
-	conflictWarnings := detectConflicts(input.Diffs)
-
-	newContent, replacementsMade, validationErrors := processEdits(fileContent, input.Diffs)
-	if len(validationErrors) > 0 {
-		return &EditFileResult{
-			Success:              false,
-			Path:                 path,
-			ReplacementsMade:     0,
-			ExpectedReplacements: expectedReplacements,
-			FailureReason:        fmt.Sprintf("validation failed: %d error(s) found", len(validationErrors)),
-			ValidationErrors:     validationErrors,
-		}, nil
-	}
-
-	// Only write if content actually changed
-	if newContent != fileContent {
-		err = afero.WriteFile(fsys, path, []byte(newContent), stat.Mode())
-		if err != nil {
-			return nil, codeact.NewCustomError("error writing file", []string{
-				"Verify that you have the permission to write to the file",
-			}, "path", path, "error", err)
-		}
-	}
-
-	return &EditFileResult{
-		Success:              true,
-		Path:                 path,
-		ReplacementsMade:     replacementsMade,
-		ExpectedReplacements: expectedReplacements,
-		ConflictWarnings:     conflictWarnings,
-	}, nil
+	return linesAdded, linesRemoved
 }
