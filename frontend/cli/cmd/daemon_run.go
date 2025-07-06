@@ -91,6 +91,7 @@ func NewDaemonRunCmd() *cobra.Command {
 					tool.NewGrepTool(),
 					tool.NewFindFileTool(),
 					tool.NewExecuteCommandTool(),
+					tool.NewSubmitReportTool(),
 					tool.NewPrintTool(),
 				),
 			)
