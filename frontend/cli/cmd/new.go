@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"connectrpc.com/connect"
@@ -10,11 +10,20 @@ import (
 
 	"github.com/spf13/cobra"
 
+	api "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
+	"github.com/furisto/construct/frontend/cli/pkg/fail"
 	"github.com/furisto/construct/frontend/cli/pkg/terminal"
 )
 
+type newOptions struct {
+	agent     string
+	workspace string
+}
+
 func NewNewCmd() *cobra.Command {
+	options := &newOptions{}
+
 	cmd := &cobra.Command{
 		Use:   "new [flags]",
 		Short: "Start a new interactive conversation",
@@ -30,57 +39,89 @@ Examples:
   # Sandbox another directory
   construct new --workspace /workspace/repo/hello/world`,
 		GroupID: "core",
-		Run: func(cmd *cobra.Command, args []string) {
-			tempFile, err := os.CreateTemp("", "construct-new-*")
-			if err != nil {
-				slog.Error("failed to create temp file", "error", err)
-				return
-			}
-
-			fmt.Println("Temp file created", tempFile.Name())
-
-			tea.LogToFile(tempFile.Name(), "debug")
-
-			slog.SetDefault(slog.New(slog.NewTextHandler(tempFile, &slog.HandlerOptions{
-				Level: slog.LevelDebug,
-			})))
+		RunE: func(cmd *cobra.Command, args []string) error {
 			apiClient := getAPIClient(cmd.Context())
 
-			agentResp, err := apiClient.Agent().ListAgents(cmd.Context(), &connect.Request[v1.ListAgentsRequest]{
-				Msg: &v1.ListAgentsRequest{
-					Filter: &v1.ListAgentsRequest_Filter{
-						// ModelIds: []string{"d3feed80-bb09-41b1-8cc7-b39022941565"},
-					},
-				},
-			})
-			if err != nil {
-				slog.Error("failed to list agents", "error", err)
-				return
-			}
-
-			agent := agentResp.Msg.Agents[0]
-
-			resp, err := apiClient.Task().CreateTask(cmd.Context(), &connect.Request[v1.CreateTaskRequest]{
-				Msg: &v1.CreateTaskRequest{
-					AgentId: agent.Metadata.Id,
-				},
-			})
-
-			if err != nil {
-				slog.Error("failed to create task", "error", err)
-				return
-			}
-
-			p := tea.NewProgram(terminal.NewModel(cmd.Context(), apiClient, resp.Msg.Task, agent), tea.WithAltScreen())
-
-			if _, err := p.Run(); err != nil {
-				fmt.Printf("Error running program: %v\n", err)
-			}
+			return fail.HandleError(handleNewCommand(cmd.Context(), apiClient, options))
 		},
 	}
 
-	cmd.Flags().String("agent", "", "Use a specific agent (default: last used or configured default)")
-	cmd.Flags().String("workspace", "", "The sandbox in which the agent can operate. It cannot see outside of the sandbox. If not specified the current directory is used")
+	cmd.Flags().StringVar(&options.agent, "agent", "", "Use a specific agent (default: last used or configured default)")
+	cmd.Flags().StringVar(&options.workspace, "workspace", "", "The sandbox in which the agent can operate. It cannot see outside of the sandbox. If not specified the current directory is used")
 
 	return cmd
+}
+
+func handleNewCommand(ctx context.Context, apiClient *api.Client, options *newOptions) error {
+	agentID, err := getAgentID(ctx, apiClient, options.agent)
+	if err != nil {
+		return err
+	}
+
+	agentResp, err := apiClient.Agent().GetAgent(ctx, &connect.Request[v1.GetAgentRequest]{
+		Msg: &v1.GetAgentRequest{
+			Id: agentID,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	agent := agentResp.Msg.Agent
+	resp, err := apiClient.Task().CreateTask(ctx, &connect.Request[v1.CreateTaskRequest]{
+		Msg: &v1.CreateTaskRequest{
+			AgentId: agent.Metadata.Id,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Created task", resp.Msg.Task.Metadata.Id)
+
+	program := tea.NewProgram(
+		terminal.NewModel(ctx, apiClient, resp.Msg.Task, agent),
+		tea.WithAltScreen(),
+	)
+
+	fmt.Println("Subscribed to task", resp.Msg.Task.Metadata.Id)
+	go func() {
+		watch, err := apiClient.Task().Subscribe(ctx, &connect.Request[v1.SubscribeRequest]{
+			Msg: &v1.SubscribeRequest{
+				TaskId: resp.Msg.Task.Metadata.Id,
+			},
+		})
+		if err != nil {
+			fmt.Println("error subscribing to task:", err)
+			return
+		}
+
+		defer watch.Close()
+
+		for watch.Receive() {
+			msg := watch.Msg()
+			program.Send(msg.Message)
+		}
+
+		if err := watch.Err(); err != nil {
+			fmt.Println("error watching task:", err)
+		}
+	}()
+	fmt.Println("Running program", resp.Msg.Task.Metadata.Id)
+
+	tempFile, err := os.CreateTemp("", "construct-new-*")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Temp file created", tempFile.Name())
+
+	tea.LogToFile(tempFile.Name(), "debug")
+
+	if _, err := program.Run(); err != nil {
+		fmt.Printf("Error running program: %v\n", err)
+	}
+
+	return nil
 }

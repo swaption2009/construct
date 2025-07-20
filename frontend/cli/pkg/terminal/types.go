@@ -1,42 +1,17 @@
 package terminal
 
-type messageType int
+type appState int
 
 const (
-	MessageTypeUser messageType = iota
-	MessageTypeAssistantText
-	MessageTypeAssistantTool
-	MessageTypeAssistantTyping
+	StateNormal appState = iota
+	StateWaiting
+	StateError
+	StateHelp
 )
 
-type message interface {
-	Type() messageType
-}
+type uiMode int
 
-type userMessage struct {
-	content string
-}
-
-func (m *userMessage) Type() messageType {
-	return MessageTypeUser
-}
-
-type assistantTextMessage struct {
-	content string
-}
-
-func (m *assistantTextMessage) Type() messageType {
-	return MessageTypeAssistantText
-}
-
-type assistantToolMessage struct {
-	callID  string
-	name    string
-	input   string
-	output  string // Can store result or error
-	isError bool   // Flag to indicate if output is an error
-}
-
-func (m *assistantToolMessage) Type() messageType {
-	return MessageTypeAssistantTool
-}
+const (
+	ModeInput uiMode = iota
+	ModeScroll
+)
