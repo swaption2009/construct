@@ -1,4 +1,4 @@
-package tool
+package base
 
 import (
 	"context"
@@ -26,19 +26,19 @@ type ToolTestServices struct {
 }
 
 type ToolTestScenario[ToolInput any, ToolResult any] struct {
-	Name           string
-	SeedDatabase   func(ctx context.Context, db *memory.Client)
-	SeedFilesystem func(ctx context.Context, fs afero.Fs)
+	Name            string
+	SeedDatabase    func(ctx context.Context, db *memory.Client)
+	SeedFilesystem  func(ctx context.Context, fs afero.Fs)
 	QueryFilesystem func(fs afero.Fs) (any, error)
-	TestInput      ToolInput
-	Expected       ToolTestExpectation[ToolResult]
+	TestInput       ToolInput
+	Expected        ToolTestExpectation[ToolResult]
 }
 
 type ToolTestExpectation[ToolResult any] struct {
-	Database        any
-	Filesystem      any
-	Result          ToolResult
-	Error           error
+	Database   any
+	Filesystem any
+	Result     ToolResult
+	Error      error
 }
 
 func (s *ToolTestSetup[ToolInput, ToolResult]) RunToolTests(t *testing.T, scenarios []ToolTestScenario[ToolInput, ToolResult]) {

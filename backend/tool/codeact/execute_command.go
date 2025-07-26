@@ -1,12 +1,11 @@
-package tool
+package codeact
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/grafana/sobek"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/system"
 )
 
 const executeCommandDescription = `
@@ -79,84 +78,39 @@ execute_command("npm run dev", false);
 %[1]s
 `
 
-type ExecuteCommandResult struct {
-	Stdout   string `json:"stdout"`
-	Stderr   string `json:"stderr"`
-	ExitCode int    `json:"exitCode"`
-	Command  string `json:"command"`
-}
-
-type ExecuteCommandInput struct {
-	Command string
-}
-
-func (e *ExecuteCommandInput) Validate() error {
-	
-	return nil
-}
-
-func NewExecuteCommandTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNameExecuteCommand,
+func NewExecuteCommandTool() Tool {
+	return NewOnDemandTool(
+		"execute_command",
 		fmt.Sprintf(executeCommandDescription, "```"),
 		executeCommandInput,
 		executeCommandHandler,
 	)
 }
 
-func executeCommandInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func executeCommandInput(session *Session, args []sobek.Value) (any, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
 
-	return &ExecuteCommandInput{
+	return &system.ExecuteCommandInput{
 		Command: args[0].String(),
 	}, nil
 }
 
-func executeCommandHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func executeCommandHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		rawInput, err := executeCommandInput(session, call.Arguments)
 		if err != nil {
 			session.Throw(err)
 		}
-		input := rawInput.(*ExecuteCommandInput)
+		input := rawInput.(*system.ExecuteCommandInput)
 
-		result, err := executeCommand(input)
+		result, err := system.ExecuteCommand(input)
 		if err != nil {
 			session.Throw(err)
 		}
 
-		codeact.SetValue(session, "result", result)
+		SetValue(session, "result", result)
 		return session.VM.ToValue(result)
 	}
-}
-
-func executeCommand(input *ExecuteCommandInput) (*ExecuteCommandResult, error) {
-	if input.Command == "" {
-		return nil, codeact.NewError(codeact.InvalidArgument, "command", "command is required")
-	}
-
-	script := fmt.Sprintf(`#!/bin/sh
-		set -euo pipefail
-		%s
-		`,
-		input.Command,
-	)
-
-	cmd := exec.Command("/bin/sh", "-c", script)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, codeact.NewCustomError("error executing command", []string{
-			"Check if the command is valid and executable.",
-			"Ensure the command is properly formatted for the target operating system.",
-		}, "command", input.Command, "error", err)
-	}
-
-	return &ExecuteCommandResult{
-		Command:  input.Command,
-		Stdout:   string(output),
-		Stderr:   "",
-		ExitCode: cmd.ProcessState.ExitCode(),
-	}, nil
 }

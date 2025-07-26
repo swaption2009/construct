@@ -1,9 +1,9 @@
-package tool
+package codeact
 
 import (
 	"fmt"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/grafana/sobek"
 )
 
@@ -83,16 +83,16 @@ print("File content:", content);
 %[1]s
 `
 
-func NewPrintTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNamePrint,
+func NewPrintTool() Tool {
+	return NewOnDemandTool(
+		base.ToolNamePrint,
 		fmt.Sprintf(printDescription, "```"),
 		printInput,
 		printHandler,
 	)
 }
 
-func printInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func printInput(session *Session, args []sobek.Value) (any, error) {
 	result := make([]any, len(args))
 	for i, arg := range args {
 		result[i] = arg.Export()
@@ -100,7 +100,7 @@ func printInput(session *codeact.Session, args []sobek.Value) (any, error) {
 	return result, nil
 }
 
-func printHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func printHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		rawInput, err := printInput(session, call.Arguments)
 		if err != nil {
@@ -109,7 +109,6 @@ func printHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.
 		args := rawInput.([]any)
 
 		fmt.Fprintln(session.System, args...)
-		// Print doesn't need to store a result since it returns undefined
 		return sobek.Undefined()
 	}
 }

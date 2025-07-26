@@ -1,4 +1,4 @@
-package tool
+package base
 
 const (
 	ToolNameCodeInterpreter = "code_interpreter"

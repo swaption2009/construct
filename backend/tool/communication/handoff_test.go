@@ -1,4 +1,4 @@
-package tool
+package communication
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/furisto/construct/backend/memory"
 	"github.com/furisto/construct/backend/memory/message"
 	"github.com/furisto/construct/backend/memory/test"
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
@@ -27,9 +27,9 @@ func TestHandoff(t *testing.T) {
 	targetAgentID := uuid.New()
 	taskID := uuid.New()
 
-	setup := &ToolTestSetup[*HandoffInput, struct{}]{
-		Call: func(ctx context.Context, services *ToolTestServices, input *HandoffInput) (struct{}, error) {
-			return struct{}{}, handoff(ctx, services.DB, input)
+	setup := &base.ToolTestSetup[*HandoffInput, struct{}]{
+		Call: func(ctx context.Context, services *base.ToolTestServices, input *HandoffInput) (struct{}, error) {
+			return struct{}{}, Handoff(ctx, services.DB, input)
 		},
 		QueryDatabase: func(ctx context.Context, db *memory.Client) (any, error) {
 			var result DatabaseResult
@@ -46,11 +46,11 @@ func TestHandoff(t *testing.T) {
 			return result, nil
 		},
 		CmpOptions: []cmp.Option{
-			cmpopts.IgnoreFields(codeact.ToolError{}, "Suggestions"),
+			cmpopts.IgnoreFields(base.ToolError{}, "Suggestions"),
 		},
 	}
 
-	setup.RunToolTests(t, []ToolTestScenario[*HandoffInput, struct{}]{
+	setup.RunToolTests(t, []base.ToolTestScenario[*HandoffInput, struct{}]{
 		{
 			Name: "source agent does not exist",
 			TestInput: &HandoffInput{
@@ -58,8 +58,8 @@ func TestHandoff(t *testing.T) {
 				CurrentAgentID: sourceAgentID,
 				RequestedAgent: "source",
 			},
-			Expected: ToolTestExpectation[struct{}]{
-				Error: codeact.NewCustomError("failed to get current agent: agent not found", []string{}),
+			Expected: base.ToolTestExpectation[struct{}]{
+				Error: base.NewCustomError("failed to get current agent: agent not found", []string{}),
 			},
 		},
 		{
@@ -78,8 +78,8 @@ func TestHandoff(t *testing.T) {
 				CurrentAgentID: sourceAgentID,
 				RequestedAgent: "target",
 			},
-			Expected: ToolTestExpectation[struct{}]{
-				Error: codeact.NewCustomError("agent target does not exist", []string{
+			Expected: base.ToolTestExpectation[struct{}]{
+				Error: base.NewCustomError("agent target does not exist", []string{
 					"Check the agent name and try again",
 				}),
 			},
@@ -103,8 +103,8 @@ func TestHandoff(t *testing.T) {
 				CurrentAgentID: sourceAgentID,
 				RequestedAgent: "target",
 			},
-			Expected: ToolTestExpectation[struct{}]{
-				Error: codeact.NewCustomError("failed to get task: task not found", []string{}),
+			Expected: base.ToolTestExpectation[struct{}]{
+				Error: base.NewCustomError("failed to get task: task not found", []string{}),
 			},
 		},
 		{
@@ -128,7 +128,7 @@ func TestHandoff(t *testing.T) {
 				CurrentAgentID: sourceAgentID,
 				RequestedAgent: "target",
 			},
-			Expected: ToolTestExpectation[struct{}]{
+			Expected: base.ToolTestExpectation[struct{}]{
 				Database: DatabaseResult{
 					AssignedAgent:   targetAgentID,
 					HandoverMessage: "The source agent has performed a handoff to you, the target agent.\n\n",
@@ -157,7 +157,7 @@ func TestHandoff(t *testing.T) {
 				RequestedAgent:  "target",
 				HandoverMessage: "handover message",
 			},
-			Expected: ToolTestExpectation[struct{}]{
+			Expected: base.ToolTestExpectation[struct{}]{
 				Database: DatabaseResult{
 					AssignedAgent:   targetAgentID,
 					HandoverMessage: "The source agent has performed a handoff to you, the target agent.\n\nIt has left the following instructions for you:\nhandover message",
@@ -181,8 +181,8 @@ func TestHandoff(t *testing.T) {
 				CurrentAgentID: sourceAgentID,
 				RequestedAgent: "source",
 			},
-			Expected: ToolTestExpectation[struct{}]{
-				Error: codeact.NewCustomError("agent cannot handoff to itself", []string{}),
+			Expected: base.ToolTestExpectation[struct{}]{
+				Error: base.NewCustomError("agent cannot handoff to itself", []string{}),
 			},
 		},
 	})

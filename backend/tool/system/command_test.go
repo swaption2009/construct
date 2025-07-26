@@ -1,34 +1,31 @@
-package tool
+package system
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestExecuteCommand(t *testing.T) {
 	t.Parallel()
 
-	setup := &ToolTestSetup[*ExecuteCommandInput, *ExecuteCommandResult]{
-		Call: func(ctx context.Context, services *ToolTestServices, input *ExecuteCommandInput) (*ExecuteCommandResult, error) {
-			return executeCommand(input)
+	setup := &base.ToolTestSetup[*ExecuteCommandInput, *ExecuteCommandResult]{
+		Call: func(ctx context.Context, services *base.ToolTestServices, input *ExecuteCommandInput) (*ExecuteCommandResult, error) {
+			return ExecuteCommand(input)
 		},
 		CmpOptions: []cmp.Option{
-			cmpopts.IgnoreFields(codeact.ToolError{}, "Suggestions"),
+			cmpopts.IgnoreFields(base.ToolError{}, "Suggestions"),
 		},
 	}
 
-	setup.RunToolTests(t, []ToolTestScenario[*ExecuteCommandInput, *ExecuteCommandResult]{
+	setup.RunToolTests(t, []base.ToolTestScenario[*ExecuteCommandInput, *ExecuteCommandResult]{
 		{
 			Name:      "successful command with output",
 			TestInput: &ExecuteCommandInput{Command: "echo 'Hello World'"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo 'Hello World'",
 					Stdout:   "Hello World\n",
@@ -40,7 +37,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "successful command without output",
 			TestInput: &ExecuteCommandInput{Command: "true"}, // Command that always succeeds and produces no output
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "true",
 					Stdout:   "",
@@ -52,7 +49,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "command that fails",
 			TestInput: &ExecuteCommandInput{Command: "false"}, // Command that always fails
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "false",
 					Stdout:   "",
@@ -64,7 +61,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "command with stderr output",
 			TestInput: &ExecuteCommandInput{Command: "echo 'error message' >&2"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo 'error message' >&2",
 					Stdout:   "error message\n", // CombinedOutput captures both stdout and stderr
@@ -76,7 +73,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "command with both stdout and stderr",
 			TestInput: &ExecuteCommandInput{Command: "echo 'stdout'; echo 'stderr' >&2"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo 'stdout'; echo 'stderr' >&2",
 					Stdout:   "stdout\nstderr\n", // CombinedOutput combines both
@@ -88,8 +85,8 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "nonexistent command",
 			TestInput: &ExecuteCommandInput{Command: "nonexistent_command_xyz_12345"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
-				Error: codeact.NewCustomError("error executing command", []string{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
+				Error: base.NewCustomError("error executing command", []string{
 					"Check if the command is valid and executable.",
 					"Ensure the command is properly formatted for the target operating system.",
 				}),
@@ -98,7 +95,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "command with exit code 2",
 			TestInput: &ExecuteCommandInput{Command: "exit 2"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "exit 2",
 					Stdout:   "",
@@ -110,7 +107,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "command with special characters",
 			TestInput: &ExecuteCommandInput{Command: "echo 'Hello \"World\" with $pecial chars!'"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo 'Hello \"World\" with $pecial chars!'",
 					Stdout:   "Hello \"World\" with $pecial chars!\n",
@@ -122,7 +119,7 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "multiline command",
 			TestInput: &ExecuteCommandInput{Command: "echo 'line1'; echo 'line2'"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo 'line1'; echo 'line2'",
 					Stdout:   "line1\nline2\n",
@@ -134,14 +131,14 @@ func TestExecuteCommand(t *testing.T) {
 		{
 			Name:      "empty command",
 			TestInput: &ExecuteCommandInput{Command: ""},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
-				Error: fmt.Errorf("command is required"),
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
+				Error: base.NewError(base.InvalidArgument, "command", "command is required"),
 			},
 		},
 		{
 			Name:      "command with spaces",
 			TestInput: &ExecuteCommandInput{Command: "echo hello world"},
-			Expected: ToolTestExpectation[*ExecuteCommandResult]{
+			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
 				Result: &ExecuteCommandResult{
 					Command:  "echo hello world",
 					Stdout:   "hello world\n",

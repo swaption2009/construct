@@ -1,14 +1,11 @@
-package tool
+package codeact
 
 import (
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
 
-	"github.com/furisto/construct/backend/tool/codeact"
 	"github.com/grafana/sobek"
-	"github.com/spf13/afero"
+
+	"github.com/furisto/construct/backend/tool/filesystem"
 )
 
 const listFilesDescription = `
@@ -116,143 +113,40 @@ try {
 %[1]s
 `
 
-func NewListFilesTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNameListFiles,
+func NewListFilesTool() Tool {
+	return NewOnDemandTool(
+		"list_files",
 		fmt.Sprintf(listFilesDescription, "```", "`"),
 		listFilesInput,
 		listFilesHandler,
 	)
 }
 
-type ListFilesInput struct {
-	Path      string
-	Recursive bool
-}
-
-type ListFilesResult struct {
-	Path    string           `json:"path"`
-	Entries []DirectoryEntry `json:"entries"`
-}
-
-type DirectoryEntry struct {
-	Name string `json:"n"`
-	Type string `json:"t"`
-	Size int64  `json:"s"`
-}
-
-func listFilesInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func listFilesInput(session *Session, args []sobek.Value) (any, error) {
 	if len(args) < 2 {
 		return nil, nil
 	}
 
-	return &ListFilesInput{
+	return &filesystem.ListFilesInput{
 		Path:      args[0].String(),
 		Recursive: args[1].ToBoolean(),
 	}, nil
 }
 
-func listFilesHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func listFilesHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		rawInput, err := listFilesInput(session, call.Arguments)
 		if err != nil {
 			session.Throw(err)
 		}
-		input := rawInput.(*ListFilesInput)
+		input := rawInput.(*filesystem.ListFilesInput)
 
-		result, err := listFiles(session.FS, input)
+		result, err := filesystem.ListFiles(session.FS, input)
 		if err != nil {
 			session.Throw(err)
 		}
 
-		codeact.SetValue(session, "result", result)
+		SetValue(session, "result", result)
 		return session.VM.ToValue(result)
-	}
-}
-
-func listFiles(fsys afero.Fs, input *ListFilesInput) (*ListFilesResult, error) {
-	if !filepath.IsAbs(input.Path) {
-		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", input.Path)
-	}
-	path := input.Path
-
-	fileInfo, err := fsys.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, codeact.NewError(codeact.DirectoryNotFound, "path", path)
-		}
-		if os.IsPermission(err) {
-			return nil, codeact.NewError(codeact.PermissionDenied, "path", path)
-		}
-		return nil, codeact.NewError(codeact.CannotStatFile, "path", path)
-	}
-
-	if !fileInfo.IsDir() {
-		return nil, codeact.NewError(codeact.PathIsNotDirectory, "path", path)
-	}
-
-	entries := []DirectoryEntry{}
-	if input.Recursive {
-		err = afero.Walk(fsys, path, func(filePath string, entry fs.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if filePath == path {
-				return nil
-			}
-
-			dirEntry, err := toDirectoryEntry(filePath, entry)
-			if err != nil {
-				return err
-			}
-			entries = append(entries, *dirEntry)
-			return nil
-		})
-
-		if err != nil {
-			if os.IsPermission(err) {
-				return nil, codeact.NewError(codeact.PermissionDenied, "path", path)
-			}
-			return nil, codeact.NewError(codeact.GenericFileError, "path", path, "error", err)
-		}
-	} else {
-		dirEntries, err := afero.ReadDir(fsys, path)
-		if err != nil {
-			if os.IsPermission(err) {
-				return nil, codeact.NewError(codeact.PermissionDenied, "path", path)
-			}
-			return nil, codeact.NewError(codeact.GenericFileError, "path", path, "error", err)
-		}
-
-		for _, entry := range dirEntries {
-			entryPath := filepath.Join(path, entry.Name())
-			dirEntry, err := toDirectoryEntry(entryPath, entry)
-			if err != nil {
-				return nil, err
-			}
-			entries = append(entries, *dirEntry)
-		}
-	}
-
-	return &ListFilesResult{
-		Path:    path,
-		Entries: entries,
-	}, nil
-}
-
-func toDirectoryEntry(path string, info fs.FileInfo) (*DirectoryEntry, error) {
-	if info.IsDir() {
-		return &DirectoryEntry{
-			Name: path,
-			Type: "d",
-			Size: 0,
-		}, nil
-	} else {
-		return &DirectoryEntry{
-			Name: path,
-			Type: "f",
-			Size: (info.Size() + 1023) / 1024, // Size in KB
-		}, nil
 	}
 }

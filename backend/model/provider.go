@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/furisto/construct/backend/tool"
+	"github.com/furisto/construct/backend/tool/native"
 )
 
 type InvokeModelOptions struct {
 	Messages      []Message
-	Tools         []tool.NativeTool
+	Tools         []native.Tool
 	MaxTokens     int
 	Temperature   float64
 	StreamHandler func(ctx context.Context, message *Message)
@@ -17,7 +17,7 @@ type InvokeModelOptions struct {
 
 func DefaultInvokeModelOptions() *InvokeModelOptions {
 	return &InvokeModelOptions{
-		Tools:       []tool.NativeTool{},
+		Tools:       []native.Tool{},
 		MaxTokens:   8192,
 		Temperature: 0.0,
 	}
@@ -25,7 +25,7 @@ func DefaultInvokeModelOptions() *InvokeModelOptions {
 
 type InvokeModelOption func(*InvokeModelOptions)
 
-func WithTools(tools ...tool.NativeTool) InvokeModelOption {
+func WithTools(tools ...native.Tool) InvokeModelOption {
 	return func(o *InvokeModelOptions) {
 		o.Tools = tools
 	}

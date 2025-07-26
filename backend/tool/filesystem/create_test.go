@@ -1,30 +1,28 @@
-package tool
+package filesystem
 
 import (
 	"context"
 	"testing"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestCreateFile(t *testing.T) {
 	t.Parallel()
 
-	setup := &ToolTestSetup[*CreateFileInput, *CreateFileResult]{
-		Call: func(ctx context.Context, services *ToolTestServices, input *CreateFileInput) (*CreateFileResult, error) {
-			return createFile(services.FS, input)
+	setup := &base.ToolTestSetup[*CreateFileInput, *CreateFileResult]{
+		Call: func(ctx context.Context, services *base.ToolTestServices, input *CreateFileInput) (*CreateFileResult, error) {
+			return CreateFile(services.FS, input)
 		},
 		CmpOptions: []cmp.Option{
-			cmpopts.IgnoreFields(codeact.ToolError{}, "Suggestions"),
+			cmpopts.IgnoreFields(base.ToolError{}, "Suggestions"),
 		},
 	}
 
-	setup.RunToolTests(t, []ToolTestScenario[*CreateFileInput, *CreateFileResult]{
+	setup.RunToolTests(t, []base.ToolTestScenario[*CreateFileInput, *CreateFileResult]{
 		{
 			Name:      "successful creation of new text file",
 			TestInput: &CreateFileInput{Path: "/workspace/new_file.txt", Content: "Hello, World!\nThis is a new file."},
@@ -42,7 +40,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/new_file.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -69,7 +67,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/test.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: true,
 				},
@@ -95,7 +93,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/empty_new.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -121,7 +119,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/deep/nested/path/new_file.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -147,7 +145,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/new_config.json": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -173,7 +171,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/unicode_new.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -199,7 +197,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/special-file_with@symbols#new.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -225,7 +223,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/large_new.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -251,7 +249,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/binary_new.bin": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -277,7 +275,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/formatted.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -304,7 +302,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/config.json": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: true,
 				},
@@ -316,30 +314,30 @@ func TestCreateFile(t *testing.T) {
 		{
 			Name:      "relative path error",
 			TestInput: &CreateFileInput{Path: "relative/path/file.txt", Content: "Some content"},
-			Expected: ToolTestExpectation[*CreateFileResult]{
-				Error: codeact.NewError(codeact.PathIsNotAbsolute, "path", "relative/path/file.txt"),
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
+				Error: base.NewError(base.PathIsNotAbsolute, "path", "relative/path/file.txt"),
 			},
 		},
 		{
 			Name:      "current directory relative path error",
 			TestInput: &CreateFileInput{Path: "./file.txt", Content: "Some content"},
-			Expected: ToolTestExpectation[*CreateFileResult]{
-				Error: codeact.NewError(codeact.PathIsNotAbsolute, "path", "./file.txt"),
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
+				Error: base.NewError(base.PathIsNotAbsolute, "path", "./file.txt"),
 			},
 		},
 		{
 			Name:      "parent directory relative path error",
 			TestInput: &CreateFileInput{Path: "../file.txt", Content: "Some content"},
-			Expected: ToolTestExpectation[*CreateFileResult]{
-				Error: codeact.NewError(codeact.PathIsNotAbsolute, "path", "../file.txt"),
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
+				Error: base.NewError(base.PathIsNotAbsolute, "path", "../file.txt"),
 			},
 		},
 		{
 			Name:           "path is directory error",
 			TestInput:      &CreateFileInput{Path: "/workspace/src", Content: "Cannot write to directory"},
 			SeedFilesystem: seedCreateFileTestFilesystem,
-			Expected: ToolTestExpectation[*CreateFileResult]{
-				Error: codeact.NewError(codeact.PathIsDirectory, "path", "/workspace/src"),
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
+				Error: base.NewError(base.PathIsDirectory, "path", "/workspace/src"),
 			},
 		},
 		{
@@ -359,7 +357,7 @@ func TestCreateFile(t *testing.T) {
 					"/root_file.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -385,7 +383,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/very/deep/nested/directory/structure/with/many/levels/that/goes/quite/far/down/the/tree/final_file.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},
@@ -411,7 +409,7 @@ func TestCreateFile(t *testing.T) {
 					"/workspace/file.with.dots.in.name.txt": string(content),
 				}, nil
 			},
-			Expected: ToolTestExpectation[*CreateFileResult]{
+			Expected: base.ToolTestExpectation[*CreateFileResult]{
 				Result: &CreateFileResult{
 					Overwritten: false,
 				},

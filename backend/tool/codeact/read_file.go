@@ -1,17 +1,11 @@
-package tool
+package codeact
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/grafana/sobek"
-	"github.com/spf13/afero"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/filesystem"
 )
 
 const readFileDescription = `
@@ -73,115 +67,39 @@ try {
 %[1]s
 `
 
-type ReadFileInput struct {
-	Path string `json:"path"`
-}
-
-type ReadFileResult struct {
-	Path    string `json:"path"`
-	Content string `json:"content"`
-}
-
-func NewReadFileTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNameReadFile,
+func NewReadFileTool() Tool {
+	return NewOnDemandTool(
+		"read_file",
 		fmt.Sprintf(readFileDescription, "```", "`"),
 		readFileInput,
 		readFileHandler,
 	)
 }
 
-func readFileInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func readFileInput(session *Session, args []sobek.Value) (any, error) {
 	if len(args) < 1 {
 		return nil, nil
 	}
 
-	return &ReadFileInput{
+	return &filesystem.ReadFileInput{
 		Path: args[0].String(),
 	}, nil
 }
 
-func readFileHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func readFileHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		rawInput, err := readFileInput(session, call.Arguments)
 		if err != nil {
 			session.Throw(err)
 		}
-		input := rawInput.(*ReadFileInput)
+		input := rawInput.(*filesystem.ReadFileInput)
 
-		result, err := readFile(session.FS, input)
+		result, err := filesystem.ReadFile(session.FS, input)
 		if err != nil {
 			session.Throw(err)
 		}
 
-		codeact.SetValue(session, "result", result)
+		SetValue(session, "result", result)
 		return session.VM.ToValue(result)
 	}
-}
-
-func readFile(fsys afero.Fs, input *ReadFileInput) (*ReadFileResult, error) {
-	if input.Path == "" {
-		return nil, codeact.NewCustomError("path is required", []string{
-			"Please provide a valid path to the file you want to read",
-		})
-	}
-
-	if !filepath.IsAbs(input.Path) {
-		return nil, codeact.NewCustomError("path must be absolute", []string{
-			"Please provide a valid absolute path to the file you want to read",
-		})
-	}
-	path := input.Path
-
-	stat, err := fsys.Stat(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, codeact.NewError(codeact.FileNotFound, "path", path)
-		}
-		if os.IsPermission(err) {
-			return nil, codeact.NewError(codeact.PermissionDenied, "path", path)
-		}
-		return nil, codeact.NewError(codeact.CannotStatFile, "path", path)
-	}
-
-	if stat.IsDir() {
-		return nil, codeact.NewCustomError("path is a directory", []string{
-			"Please provide a valid path to a file",
-		}, "path", path)
-	}
-	
-	file, err := fsys.Open(path)
-	if err != nil {
-		return nil, codeact.NewCustomError("error reading file", []string{
-			"Verify that you have the permission to read the file",
-		}, "path", path, "error", err)
-	}
-	defer file.Close()
-
-
-	var builder strings.Builder
-	scanner := bufio.NewScanner(file)
-	lineNumber := 1
-	
-	for scanner.Scan() {
-		line := scanner.Text()
-		if lineNumber > 1 {
-			builder.WriteByte('\n')
-		}
-		builder.WriteString(strconv.Itoa(lineNumber))
-		builder.WriteString(": ")
-		builder.WriteString(line)
-		lineNumber++
-	}
-	
-	if err := scanner.Err(); err != nil {
-		return nil, codeact.NewCustomError("error reading file", []string{
-			"Verify that you have the permission to read the file",
-		}, "path", path, "error", err)
-	}
-
-	return &ReadFileResult{
-		Path:    path,
-		Content: builder.String(),
-	}, nil
 }

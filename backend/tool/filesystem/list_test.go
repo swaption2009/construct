@@ -1,10 +1,10 @@
-package tool
+package filesystem
 
 import (
 	"context"
 	"testing"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/spf13/afero"
@@ -13,27 +13,27 @@ import (
 func TestListFiles(t *testing.T) {
 	t.Parallel()
 
-	setup := &ToolTestSetup[*ListFilesInput, *ListFilesResult]{
-		Call: func(ctx context.Context, services *ToolTestServices, input *ListFilesInput) (*ListFilesResult, error) {
-			return listFiles(services.FS, input)
+	setup := &base.ToolTestSetup[*ListFilesInput, *ListFilesResult]{
+		Call: func(ctx context.Context, services *base.ToolTestServices, input *ListFilesInput) (*ListFilesResult, error) {
+			return ListFiles(services.FS, input)
 		},
 		CmpOptions: []cmp.Option{
-			cmpopts.IgnoreFields(codeact.ToolError{}, "Suggestions"),
+			cmpopts.IgnoreFields(base.ToolError{}, "Suggestions"),
 			cmpopts.SortSlices(func(a, b DirectoryEntry) bool {
 				return a.Name < b.Name
 			}),
 		},
 	}
 
-	setup.RunToolTests(t, []ToolTestScenario[*ListFilesInput, *ListFilesResult]{
+	setup.RunToolTests(t, []base.ToolTestScenario[*ListFilesInput, *ListFilesResult]{
 		{
 			Name: "path is not absolute",
 			TestInput: &ListFilesInput{
 				Path:      "relative/path",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
-				Error: codeact.NewError(codeact.PathIsNotAbsolute, "path", "relative/path"),
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
+				Error: base.NewError(base.PathIsNotAbsolute, "path", "relative/path"),
 			},
 		},
 		{
@@ -42,8 +42,8 @@ func TestListFiles(t *testing.T) {
 				Path:      "/nonexistent",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
-				Error: codeact.NewError(codeact.DirectoryNotFound, "path", "/nonexistent"),
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
+				Error: base.NewError(base.DirectoryNotFound, "path", "/nonexistent"),
 			},
 		},
 		{
@@ -55,8 +55,8 @@ func TestListFiles(t *testing.T) {
 				Path:      "/file.txt",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
-				Error: codeact.NewError(codeact.PathIsNotDirectory, "path", "/file.txt"),
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
+				Error: base.NewError(base.PathIsNotDirectory, "path", "/file.txt"),
 			},
 		},
 		{
@@ -68,7 +68,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/empty",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path:    "/empty",
 					Entries: []DirectoryEntry{},
@@ -84,7 +84,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/empty",
 				Recursive: true,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path:    "/empty",
 					Entries: []DirectoryEntry{},
@@ -103,7 +103,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/workspace",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path: "/workspace",
 					Entries: []DirectoryEntry{
@@ -129,7 +129,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/workspace",
 				Recursive: true,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path: "/workspace",
 					Entries: []DirectoryEntry{
@@ -166,7 +166,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/test",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path: "/test",
 					Entries: []DirectoryEntry{
@@ -193,7 +193,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/project",
 				Recursive: true,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path: "/project",
 					Entries: []DirectoryEntry{
@@ -223,7 +223,7 @@ func TestListFiles(t *testing.T) {
 				Path:      "/",
 				Recursive: false,
 			},
-			Expected: ToolTestExpectation[*ListFilesResult]{
+			Expected: base.ToolTestExpectation[*ListFilesResult]{
 				Result: &ListFilesResult{
 					Path: "/",
 					Entries: []DirectoryEntry{

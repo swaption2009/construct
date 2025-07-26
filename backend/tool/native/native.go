@@ -1,4 +1,4 @@
-package tool
+package native
 
 import (
 	"context"
@@ -36,14 +36,14 @@ func WithAdditionalCategory(category string) ToolOption {
 	}
 }
 
-type NativeTool interface {
+type Tool interface {
 	Name() string
 	Description() string
 	Schema() any
 	Run(ctx context.Context, fs afero.Fs, input json.RawMessage) (string, error)
 }
 
-func NewTool[T any](name, description, category string, handler ToolHandler[T], opts ...ToolOption) NativeTool {
+func NewTool[T any](name, description, category string, handler ToolHandler[T], opts ...ToolOption) Tool {
 	reflector := jsonschema.Reflector{
 		AllowAdditionalProperties: false,
 		DoNotReference:            true,

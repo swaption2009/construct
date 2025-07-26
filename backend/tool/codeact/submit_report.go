@@ -1,10 +1,11 @@
-package tool
+package codeact
 
 import (
 	"fmt"
 
-	"github.com/furisto/construct/backend/tool/codeact"
 	"github.com/grafana/sobek"
+
+	"github.com/furisto/construct/backend/tool/communication"
 )
 
 const submitReportDescription = `
@@ -74,44 +75,18 @@ submit_report({
 %[1]s
 `
 
-const SubmitReportKey = "submit_report"
-
-type SubmitReportInput struct {
-	Summary      string
-	Completed    bool
-	Deliverables []string
-	NextSteps    string
-}
-
-type SubmitReportResult struct {
-	Summary      string   `json:"summary"`
-	Completed    bool     `json:"completed"`
-	Deliverables []string `json:"deliverables"`
-	NextSteps    string   `json:"next_steps"`
-}
-
-func (s *SubmitReportInput) Validate() error {
-	if s.Summary == "" {
-		return codeact.NewCustomError("summary is required", []string{
-			"Please provide a clear summary of what was accomplished during the work session",
-			"The summary should highlight key deliverables, changes made, or outcomes achieved",
-		})
-	}
-	return nil
-}
-
-func NewSubmitReportTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNameSubmitReport,
+func NewSubmitReportTool() Tool {
+	return NewOnDemandTool(
+		"submit_report",
 		fmt.Sprintf(submitReportDescription, "```"),
 		submitReportInput,
 		submitReportHandler,
 	)
 }
 
-func submitReportInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func submitReportInput(session *Session, args []sobek.Value) (any, error) {
 	if len(args) == 0 {
-		return nil, codeact.NewCustomError("submit_report requires at least 1 argument", []string{
+		return nil, NewCustomError("submit_report requires at least 1 argument", []string{
 			"- **summary** (string, required): A clear, concise summary of what was accomplished",
 			"- **completed** (boolean, required): Whether the task has been completed",
 			"- **deliverables** (array, optional): List of specific files, features, or outputs created",
@@ -124,7 +99,7 @@ func submitReportInput(session *codeact.Session, args []sobek.Value) (any, error
 		return nil, nil
 	}
 
-	input := &SubmitReportInput{}
+	input := &communication.SubmitReportInput{}
 
 	if summaryVal := obj.Get("summary"); summaryVal != nil && summaryVal != sobek.Undefined() {
 		input.Summary = summaryVal.String()
@@ -154,34 +129,21 @@ func submitReportInput(session *codeact.Session, args []sobek.Value) (any, error
 	return input, nil
 }
 
-func submitReportHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func submitReportHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		rawInput, err := submitReportInput(session, call.Arguments)
 		if err != nil {
 			session.Throw(err)
 		}
-		input := rawInput.(*SubmitReportInput)
+		input := rawInput.(*communication.SubmitReportInput)
 
-		result, err := submitReport(input)
+		result, err := communication.SubmitReport(input)
 		if err != nil {
 			session.Throw(err)
 		}
 
-		codeact.SetValue(session, "result", result)
+		SetValue(session, "result", result)
 		fmt.Fprintln(session.System, "REPORT SUBMITTED")
 		return session.VM.ToValue(result)
 	}
-}
-
-func submitReport(input *SubmitReportInput) (*SubmitReportResult, error) {
-	if err := input.Validate(); err != nil {
-		return nil, err
-	}
-
-	return &SubmitReportResult{
-		Summary:      input.Summary,
-		Completed:    input.Completed,
-		Deliverables: input.Deliverables,
-		NextSteps:    input.NextSteps,
-	}, nil
 }

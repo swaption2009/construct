@@ -3,13 +3,16 @@ package codeact
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/backend/stream"
+	"github.com/furisto/construct/backend/tool/communication"
+	"github.com/furisto/construct/backend/tool/filesystem"
+	"github.com/furisto/construct/backend/tool/system"
+	"github.com/furisto/construct/shared"
 	"github.com/google/uuid"
 	"github.com/grafana/sobek"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -103,22 +106,27 @@ func NewToolEventPublisher(eventHub *stream.EventHub) *ToolEventPublisher {
 
 func (p *ToolEventPublisher) Intercept(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
-		toolCall := convertArgumentsToProtoToolCall(tool.Name(), call.Arguments, session.VM)
-		if toolCall != nil {
-			fmt.Printf("toolCall: %+v\n", toolCall)
+		defer UnsetValue(session, "result")
+
+		toolCall, err := convertArgumentsToProtoToolCall(tool, call.Arguments, session)
+		if err != nil {
+			slog.Error("failed to convert arguments to proto tool call", "error", err)
 		}
 		p.publishToolEvent(session.TaskID, toolCall, v1.MessageRole_MESSAGE_ROLE_ASSISTANT)
 
 		result := inner(call)
+		raw, ok := GetValue[any](session, "result")
 
-		toolResult, err := convertResultToProtoToolResult(tool.Name(), result, session.VM)
-		if err != nil {
-			slog.Error("failed to convert result to proto tool result", "error", err)
+		if ok {
+			toolResult, err := convertResultToProtoToolResult(tool.Name(), raw)
+			if err != nil {
+				slog.Error("failed to convert result to proto tool result", "error", err)
+			}
+			if toolResult != nil {
+				fmt.Printf("toolResult: %+v\n", toolResult)
+			}
+			p.publishToolEvent(session.TaskID, toolResult, v1.MessageRole_MESSAGE_ROLE_USER)
 		}
-		if toolResult != nil {
-			fmt.Printf("toolResult: %+v\n", toolResult)
-		}
-		p.publishToolEvent(session.TaskID, toolResult, v1.MessageRole_MESSAGE_ROLE_USER)
 
 		return result
 	}
@@ -149,446 +157,207 @@ func (p *ToolEventPublisher) publishToolEvent(taskID uuid.UUID, part *v1.Message
 	})
 }
 
-func convertArgumentsToProtoToolCall(toolName string, arguments []sobek.Value, vm *sobek.Runtime) *v1.MessagePart {
+func convertArgumentsToProtoToolCall(tooCall Tool, arguments []sobek.Value, session *Session) (*v1.MessagePart, error) {
 	toolCall := &v1.ToolCall{
-		ToolName: toolName,
+		ToolName: tooCall.Name(),
 	}
 
-	switch toolName {
-	case "create_file":
-		if len(arguments) >= 2 {
-			toolCall.Input = &v1.ToolCall_CreateFile{
-				CreateFile: &v1.ToolCall_CreateFileInput{
-					Path:    arguments[0].String(),
-					Content: arguments[1].String(),
-				},
-			}
+	input, err := tooCall.Input(session, arguments)
+	if err != nil {
+		return nil, err
+	}
+
+	switch input := input.(type) {
+	case *filesystem.CreateFileInput:
+		toolCall.Input = &v1.ToolCall_CreateFile{
+			CreateFile: &v1.ToolCall_CreateFileInput{
+				Path:    input.Path,
+				Content: input.Content,
+			},
 		}
-	case "edit_file":
-		if len(arguments) >= 2 {
-			path := arguments[0].String()
-			diffsArg := arguments[1]
-
-			var diffs []*v1.ToolCall_EditFileInput_DiffPair
-			if diffsObj := diffsArg.ToObject(vm); diffsObj != nil {
-				if lengthVal := diffsObj.Get("length"); lengthVal != nil {
-					length := int(lengthVal.ToInteger())
-					for i := 0; i < length; i++ {
-						if diffVal := diffsObj.Get(fmt.Sprintf("%d", i)); diffVal != nil {
-							if diffObj := diffVal.ToObject(vm); diffObj != nil {
-								oldText := ""
-								newText := ""
-								if oldVal := diffObj.Get("old"); oldVal != nil {
-									oldText = oldVal.String()
-								}
-								if newVal := diffObj.Get("new"); newVal != nil {
-									newText = newVal.String()
-								}
-								diffs = append(diffs, &v1.ToolCall_EditFileInput_DiffPair{
-									Old: oldText,
-									New: newText,
-								})
-							}
-						}
-					}
-				}
-			}
-
-			toolCall.Input = &v1.ToolCall_EditFile{
-				EditFile: &v1.ToolCall_EditFileInput{
-					Path:  path,
-					Diffs: diffs,
-				},
-			}
+	case *filesystem.EditFileInput:
+		var diffs []*v1.ToolCall_EditFileInput_DiffPair
+		for _, diff := range input.Diffs {
+			diffs = append(diffs, &v1.ToolCall_EditFileInput_DiffPair{
+				Old: diff.Old,
+				New: diff.New,
+			})
 		}
-	case "execute_command":
-		if len(arguments) >= 1 {
-			toolCall.Input = &v1.ToolCall_ExecuteCommand{
-				ExecuteCommand: &v1.ToolCall_ExecuteCommandInput{
-					Command: arguments[0].String(),
-				},
-			}
+		toolCall.Input = &v1.ToolCall_EditFile{
+			EditFile: &v1.ToolCall_EditFileInput{
+				Path:  input.Path,
+				Diffs: diffs,
+			},
 		}
-	case "find_file":
-		if len(arguments) >= 1 {
-			inputObj := arguments[0].ToObject(vm)
-			input := &v1.ToolCall_FindFileInput{}
-
-			if pattern := inputObj.Get("pattern"); pattern != nil {
-				input.Pattern = pattern.String()
-			}
-			if path := inputObj.Get("path"); path != nil {
-				input.Path = path.String()
-			}
-			if excludePattern := inputObj.Get("exclude_pattern"); excludePattern != nil {
-				input.ExcludePattern = excludePattern.String()
-			}
-			if maxResults := inputObj.Get("max_results"); maxResults != nil {
-				input.MaxResults = int32(maxResults.ToInteger())
-			}
-
-			toolCall.Input = &v1.ToolCall_FindFile{
-				FindFile: input,
-			}
+	case *system.ExecuteCommandInput:
+		toolCall.Input = &v1.ToolCall_ExecuteCommand{
+			ExecuteCommand: &v1.ToolCall_ExecuteCommandInput{
+				Command: input.Command,
+			},
 		}
-	case "grep":
-		if len(arguments) >= 1 {
-			inputObj := arguments[0].ToObject(vm)
-			input := &v1.ToolCall_GrepInput{}
-
-			if query := inputObj.Get("query"); query != nil {
-				input.Query = query.String()
-			}
-			if path := inputObj.Get("path"); path != nil {
-				input.Path = path.String()
-			}
-			if includePattern := inputObj.Get("include_pattern"); includePattern != nil {
-				input.IncludePattern = includePattern.String()
-			}
-			if excludePattern := inputObj.Get("exclude_pattern"); excludePattern != nil {
-				input.ExcludePattern = excludePattern.String()
-			}
-			if caseSensitive := inputObj.Get("case_sensitive"); caseSensitive != nil {
-				input.CaseSensitive = caseSensitive.ToBoolean()
-			}
-			if maxResults := inputObj.Get("max_results"); maxResults != nil {
-				input.MaxResults = int32(maxResults.ToInteger())
-			}
-
-			toolCall.Input = &v1.ToolCall_Grep{
-				Grep: input,
-			}
+	case *filesystem.FindFileInput:
+		toolCall.Input = &v1.ToolCall_FindFile{
+			FindFile: &v1.ToolCall_FindFileInput{
+				Pattern:        input.Pattern,
+				Path:           input.Path,
+				ExcludePattern: input.ExcludePattern,
+				MaxResults:     int32(input.MaxResults),
+			},
 		}
-	case "handoff":
-		if len(arguments) >= 1 {
-			agent := arguments[0].String()
-			var handoverMessage string
-			if len(arguments) > 1 && arguments[1] != sobek.Undefined() {
-				handoverMessage = arguments[1].String()
-			}
-
-			toolCall.Input = &v1.ToolCall_Handoff{
-				Handoff: &v1.ToolCall_HandoffInput{
-					RequestedAgent:  agent,
-					HandoverMessage: handoverMessage,
-				},
-			}
+	case *filesystem.GrepInput:
+		toolCall.Input = &v1.ToolCall_Grep{
+			Grep: &v1.ToolCall_GrepInput{
+				Query:          input.Query,
+				Path:           input.Path,
+				IncludePattern: input.IncludePattern,
+				ExcludePattern: input.ExcludePattern,
+				CaseSensitive:  input.CaseSensitive,
+				MaxResults:     int32(input.MaxResults),
+			},
 		}
-	case "ask_user":
-		if len(arguments) >= 1 {
-			inputObj := arguments[0].ToObject(vm)
-			input := &v1.ToolCall_AskUserInput{}
-
-			if question := inputObj.Get("question"); question != nil {
-				input.Question = question.String()
-			}
-			if options := inputObj.Get("options"); options != nil {
-				if optionsObj := options.ToObject(vm); optionsObj != nil {
-					if lengthVal := optionsObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if optionVal := optionsObj.Get(fmt.Sprintf("%d", i)); optionVal != nil {
-								input.Options = append(input.Options, optionVal.String())
-							}
-						}
-					}
-				}
-			}
-
-			toolCall.Input = &v1.ToolCall_AskUser{
-				AskUser: input,
-			}
+	case *communication.HandoffInput:
+		toolCall.Input = &v1.ToolCall_Handoff{
+			Handoff: &v1.ToolCall_HandoffInput{
+				RequestedAgent:  input.RequestedAgent,
+				HandoverMessage: input.HandoverMessage,
+			},
 		}
-	case "list_files":
-		if len(arguments) >= 2 {
-			toolCall.Input = &v1.ToolCall_ListFiles{
-				ListFiles: &v1.ToolCall_ListFilesInput{
-					Path:      arguments[0].String(),
-					Recursive: arguments[1].ToBoolean(),
-				},
-			}
+	case *communication.AskUserInput:
+		toolCall.Input = &v1.ToolCall_AskUser{
+			AskUser: &v1.ToolCall_AskUserInput{
+				Question: input.Question,
+				Options:  input.Options,
+			},
 		}
-	case "read_file":
-		if len(arguments) >= 1 {
-			toolCall.Input = &v1.ToolCall_ReadFile{
-				ReadFile: &v1.ToolCall_ReadFileInput{
-					Path: arguments[0].String(),
-				},
-			}
+	case *filesystem.ListFilesInput:
+		toolCall.Input = &v1.ToolCall_ListFiles{
+			ListFiles: &v1.ToolCall_ListFilesInput{
+				Path:      input.Path,
+				Recursive: input.Recursive,
+			},
 		}
-	case "submit_report":
-		if len(arguments) >= 1 {
-			inputObj := arguments[0].ToObject(vm)
-			input := &v1.ToolCall_SubmitReportInput{}
-
-			if summary := inputObj.Get("summary"); summary != nil {
-				input.Summary = summary.String()
-			}
-			if completed := inputObj.Get("completed"); completed != nil {
-				input.Completed = completed.ToBoolean()
-			}
-			if deliverables := inputObj.Get("deliverables"); deliverables != nil {
-				if deliverablesObj := deliverables.ToObject(vm); deliverablesObj != nil {
-					if lengthVal := deliverablesObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if deliverableVal := deliverablesObj.Get(fmt.Sprintf("%d", i)); deliverableVal != nil {
-								input.Deliverables = append(input.Deliverables, deliverableVal.String())
-							}
-						}
-					}
-				}
-			}
-			if nextSteps := inputObj.Get("next_steps"); nextSteps != nil {
-				input.NextSteps = nextSteps.String()
-			}
-
-			toolCall.Input = &v1.ToolCall_SubmitReport{
-				SubmitReport: input,
-			}
+	case *filesystem.ReadFileInput:
+		toolCall.Input = &v1.ToolCall_ReadFile{
+			ReadFile: &v1.ToolCall_ReadFileInput{
+				Path: input.Path,
+			},
+		}
+	case *communication.SubmitReportInput:
+		toolCall.Input = &v1.ToolCall_SubmitReport{
+			SubmitReport: &v1.ToolCall_SubmitReportInput{
+				Summary:      input.Summary,
+				Completed:    input.Completed,
+				Deliverables: input.Deliverables,
+				NextSteps:    input.NextSteps,
+			},
 		}
 	default:
-		return nil
+		return nil, shared.Errorf(shared.ErrorSourceSystem, "unknown tool input type: %T", input)
 	}
 
 	return &v1.MessagePart{
 		Data: &v1.MessagePart_ToolCall{
 			ToolCall: toolCall,
 		},
-	}
+	}, nil
 }
 
-// convertResultToProtoToolResult converts JavaScript function result to proper proto ToolResult
-func convertResultToProtoToolResult(toolName string, result sobek.Value, vm *sobek.Runtime) (*v1.MessagePart, error) {
+// convertResultToProtoToolResult converts tool result to proper proto ToolResult
+func convertResultToProtoToolResult(toolName string, result any) (*v1.MessagePart, error) {
 	toolResult := &v1.ToolResult{
 		ToolName: toolName,
 	}
 
-	exported, err := export(result)
-	if err != nil {
-		return nil, fmt.Errorf("failed to export result: %w", err)
-	}
-
-	if result == sobek.Undefined() || result == sobek.Null() {
-		switch toolName {
-		case "handoff":
-			return nil, nil
-		default:
-			return nil, errors.New("tool returned undefined result")
+	switch result := result.(type) {
+	case *filesystem.CreateFileResult:
+		toolResult.Result = &v1.ToolResult_CreateFile{
+			CreateFile: &v1.ToolResult_CreateFileResult{
+				Overwritten: result.Overwritten,
+			},
 		}
-	}
-
-	switch toolName {
-	case "create_file":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			overwritten := false
-			if overwrittenVal := resultObj.Get("overwritten"); overwrittenVal != nil {
-				overwritten = overwrittenVal.ToBoolean()
-			}
-			toolResult.Result = &v1.ToolResult_CreateFile{
-				CreateFile: &v1.ToolResult_CreateFileResult{
-					Overwritten: overwritten,
-				},
+	case *filesystem.EditFileResult:
+		editResult := &v1.ToolResult_EditFileResult{
+			Path: result.Path,
+		}
+		if result.PatchInfo.Patch != "" {
+			editResult.PatchInfo = &v1.ToolResult_EditFileResult_PatchInfo{
+				Patch:        result.PatchInfo.Patch,
+				LinesAdded:   int32(result.PatchInfo.LinesAdded),
+				LinesRemoved: int32(result.PatchInfo.LinesRemoved),
 			}
 		}
-	case "edit_file":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			editResult := &v1.ToolResult_EditFileResult{}
-
-			if path := resultObj.Get("path"); path != nil {
-				editResult.Path = path.String()
-			}
-			if patchInfo := resultObj.Get("patch_info"); patchInfo != nil {
-				if patchObj := patchInfo.ToObject(vm); patchObj != nil {
-					patch := &v1.ToolResult_EditFileResult_PatchInfo{}
-					if patchVal := patchObj.Get("patch"); patchVal != nil {
-						patch.Patch = patchVal.String()
-					}
-					if linesAdded := patchObj.Get("lines_added"); linesAdded != nil {
-						patch.LinesAdded = int32(linesAdded.ToInteger())
-					}
-					if linesRemoved := patchObj.Get("lines_removed"); linesRemoved != nil {
-						patch.LinesRemoved = int32(linesRemoved.ToInteger())
-					}
-					editResult.PatchInfo = patch
-				}
-			}
-
-			toolResult.Result = &v1.ToolResult_EditFile{
-				EditFile: editResult,
-			}
+		toolResult.Result = &v1.ToolResult_EditFile{
+			EditFile: editResult,
 		}
-	case "execute_command":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			execResult := &v1.ToolResult_ExecuteCommandResult{}
-
-			if stdout := resultObj.Get("stdout"); stdout != nil {
-				execResult.Stdout = stdout.String()
-			}
-			if stderr := resultObj.Get("stderr"); stderr != nil {
-				execResult.Stderr = stderr.String()
-			}
-			if exitCode := resultObj.Get("exitCode"); exitCode != nil {
-				execResult.ExitCode = int32(exitCode.ToInteger())
-			}
-			if command := resultObj.Get("command"); command != nil {
-				execResult.Command = command.String()
-			}
-
-			toolResult.Result = &v1.ToolResult_ExecuteCommand{
-				ExecuteCommand: execResult,
-			}
+	case *system.ExecuteCommandResult:
+		toolResult.Result = &v1.ToolResult_ExecuteCommand{
+			ExecuteCommand: &v1.ToolResult_ExecuteCommandResult{
+				Stdout:   result.Stdout,
+				Stderr:   result.Stderr,
+				ExitCode: int32(result.ExitCode),
+				Command:  result.Command,
+			},
 		}
-	case "find_file":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			findResult := &v1.ToolResult_FindFileResult{}
-
-			if files := resultObj.Get("files"); files != nil {
-				if filesObj := files.ToObject(vm); filesObj != nil {
-					if lengthVal := filesObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if fileVal := filesObj.Get(fmt.Sprintf("%d", i)); fileVal != nil {
-								findResult.Files = append(findResult.Files, fileVal.String())
-							}
-						}
-					}
-				}
-			}
-			if totalFiles := resultObj.Get("total_files"); totalFiles != nil {
-				findResult.TotalFiles = int32(totalFiles.ToInteger())
-			}
-			if truncatedCount := resultObj.Get("truncated_count"); truncatedCount != nil {
-				findResult.TruncatedCount = int32(truncatedCount.ToInteger())
-			}
-
-			toolResult.Result = &v1.ToolResult_FindFile{
-				FindFile: findResult,
-			}
+	case *filesystem.FindFileResult:
+		toolResult.Result = &v1.ToolResult_FindFile{
+			FindFile: &v1.ToolResult_FindFileResult{
+				Files:          result.Files,
+				TotalFiles:     int32(result.TotalFiles),
+				TruncatedCount: int32(result.TruncatedCount),
+			},
 		}
-	case "grep":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			grepResult := &v1.ToolResult_GrepResult{}
-
-			if matches := resultObj.Get("matches"); matches != nil {
-				if matchesObj := matches.ToObject(vm); matchesObj != nil {
-					if lengthVal := matchesObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if matchVal := matchesObj.Get(fmt.Sprintf("%d", i)); matchVal != nil {
-								if matchObj := matchVal.ToObject(vm); matchObj != nil {
-									match := &v1.ToolResult_GrepResult_GrepMatch{}
-									if filePath := matchObj.Get("file_path"); filePath != nil {
-										match.FilePath = filePath.String()
-									}
-									if lineNumber := matchObj.Get("line_number"); lineNumber != nil {
-										match.LineNumber = int32(lineNumber.ToInteger())
-									}
-									if lineContent := matchObj.Get("line_content"); lineContent != nil {
-										match.LineContent = lineContent.String()
-									}
-									grepResult.Matches = append(grepResult.Matches, match)
-								}
-							}
-						}
-					}
-				}
-			}
-			if totalMatches := resultObj.Get("total_matches"); totalMatches != nil {
-				grepResult.TotalMatches = int32(totalMatches.ToInteger())
-			}
-			if searchedFiles := resultObj.Get("searched_files"); searchedFiles != nil {
-				grepResult.SearchedFiles = int32(searchedFiles.ToInteger())
-			}
-
-			toolResult.Result = &v1.ToolResult_Grep{
-				Grep: grepResult,
-			}
+	case *filesystem.GrepResult:
+		var matches []*v1.ToolResult_GrepResult_GrepMatch
+		for _, match := range result.Matches {
+			matches = append(matches, &v1.ToolResult_GrepResult_GrepMatch{
+				FilePath:    match.FilePath,
+				LineNumber:  int32(match.LineNumber),
+				LineContent: match.LineContent,
+			})
 		}
-	case "list_files":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			listResult := &v1.ToolResult_ListFilesResult{}
-
-			if path := resultObj.Get("path"); path != nil {
-				listResult.Path = path.String()
-			}
-			if entries := resultObj.Get("entries"); entries != nil {
-				if entriesObj := entries.ToObject(vm); entriesObj != nil {
-					if lengthVal := entriesObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if entryVal := entriesObj.Get(fmt.Sprintf("%d", i)); entryVal != nil {
-								if entryObj := entryVal.ToObject(vm); entryObj != nil {
-									entry := &v1.ToolResult_ListFilesResult_DirectoryEntry{}
-									if name := entryObj.Get("n"); name != nil {
-										entry.Name = name.String()
-									}
-									if entryType := entryObj.Get("t"); entryType != nil {
-										entry.Type = entryType.String()
-									}
-									if size := entryObj.Get("s"); size != nil {
-										entry.Size = size.ToInteger()
-									}
-									listResult.Entries = append(listResult.Entries, entry)
-								}
-							}
-						}
-					}
-				}
-			}
-
-			toolResult.Result = &v1.ToolResult_ListFiles{
-				ListFiles: listResult,
-			}
+		toolResult.Result = &v1.ToolResult_Grep{
+			Grep: &v1.ToolResult_GrepResult{
+				Matches:       matches,
+				TotalMatches:  int32(result.TotalMatches),
+				SearchedFiles: int32(result.SearchedFiles),
+			},
 		}
-	case "read_file":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			readResult := &v1.ToolResult_ReadFileResult{}
-
-			if path := resultObj.Get("path"); path != nil {
-				readResult.Path = path.String()
-			}
-			if content := resultObj.Get("content"); content != nil {
-				readResult.Content = content.String()
-			}
-
-			toolResult.Result = &v1.ToolResult_ReadFile{
-				ReadFile: readResult,
-			}
+	case *filesystem.ListFilesResult:
+		var entries []*v1.ToolResult_ListFilesResult_DirectoryEntry
+		for _, entry := range result.Entries {
+			entries = append(entries, &v1.ToolResult_ListFilesResult_DirectoryEntry{
+				Name: entry.Name,
+				Type: entry.Type,
+				Size: entry.Size,
+			})
 		}
-	case "submit_report":
-		if resultObj := result.ToObject(vm); resultObj != nil {
-			submitResult := &v1.ToolResult_SubmitReportResult{}
-
-			if summary := resultObj.Get("summary"); summary != nil {
-				submitResult.Summary = summary.String()
-			}
-			if completed := resultObj.Get("completed"); completed != nil {
-				submitResult.Completed = completed.ToBoolean()
-			}
-			if deliverables := resultObj.Get("deliverables"); deliverables != nil {
-				if deliverablesObj := deliverables.ToObject(vm); deliverablesObj != nil {
-					if lengthVal := deliverablesObj.Get("length"); lengthVal != nil {
-						length := int(lengthVal.ToInteger())
-						for i := 0; i < length; i++ {
-							if deliverableVal := deliverablesObj.Get(fmt.Sprintf("%d", i)); deliverableVal != nil {
-								submitResult.Deliverables = append(submitResult.Deliverables, deliverableVal.String())
-							}
-						}
-					}
-				}
-			}
-			if nextSteps := resultObj.Get("next_steps"); nextSteps != nil {
-				submitResult.NextSteps = nextSteps.String()
-			}
-
-			toolResult.Result = &v1.ToolResult_SubmitReport{
-				SubmitReport: submitResult,
-			}
+		toolResult.Result = &v1.ToolResult_ListFiles{
+			ListFiles: &v1.ToolResult_ListFilesResult{
+				Path:    result.Path,
+				Entries: entries,
+			},
 		}
+	case *filesystem.ReadFileResult:
+		toolResult.Result = &v1.ToolResult_ReadFile{
+			ReadFile: &v1.ToolResult_ReadFileResult{
+				Path:    result.Path,
+				Content: result.Content,
+			},
+		}
+	case *communication.SubmitReportResult:
+		toolResult.Result = &v1.ToolResult_SubmitReport{
+			SubmitReport: &v1.ToolResult_SubmitReportResult{
+				Summary:      result.Summary,
+				Completed:    result.Completed,
+				Deliverables: result.Deliverables,
+				NextSteps:    result.NextSteps,
+			},
+		}
+	case nil:
+		// Some tools like handoff don't return a result, only an error
+		return nil, nil
 	default:
-		// For unknown tools, just store the exported result as a string
-		slog.Warn("unknown tool result type", "tool", toolName, "result", exported)
+		return nil, shared.Errorf(shared.ErrorSourceSystem, "unknown tool result type: %T", result)
 	}
 
 	return &v1.MessagePart{

@@ -1,5 +1,4 @@
-package tool
-
+package codeact
 
 // # Description
 // Initiates interactive communication with the user to gather additional information, clarification, or specific details needed to complete a task effectively. This tool enables the agent to resolve ambiguities and make informed decisions by directly querying the user for input. It serves as a bridge between the agent's understanding and the user's intent, ensuring accurate task execution.

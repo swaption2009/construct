@@ -1,13 +1,11 @@
-package tool
+package codeact
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/grafana/sobek"
-	"github.com/spf13/afero"
 
-	"github.com/furisto/construct/backend/tool/codeact"
+	"github.com/furisto/construct/backend/tool/filesystem"
 )
 
 const createFileDescription = `
@@ -86,84 +84,40 @@ export default Button;%[2]s)
 %[1]s
 `
 
-type CreateFileInput struct {
-	Path    string
-	Content string
-}
-
-type CreateFileResult struct {
-	Overwritten bool `json:"overwritten"`
-}
-
-func NewCreateFileTool() codeact.Tool {
-	return codeact.NewOnDemandTool(
-		ToolNameCreateFile,
+func NewCreateFileTool() Tool {
+	return NewOnDemandTool(
+		"create_file",
 		fmt.Sprintf(createFileDescription, "```", "`"),
 		fileInput,
 		createFileHandler,
 	)
 }
 
-func fileInput(session *codeact.Session, args []sobek.Value) (any, error) {
+func fileInput(session *Session, args []sobek.Value) (any, error) {
 	if len(args) >= 2 {
-		return &CreateFileInput{
+		return &filesystem.CreateFileInput{
 			Path:    args[0].String(),
 			Content: args[1].String(),
 		}, nil
 	}
-	return nil, codeact.NewCustomError("invalid arguments", []string{
+	return nil, NewCustomError("invalid arguments", []string{
 		"The create_file tool requires exactly two arguments: path and content",
 	}, "arguments", args)
 }
 
-func createFileHandler(session *codeact.Session) func(call sobek.FunctionCall) sobek.Value {
+func createFileHandler(session *Session) func(call sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
 		input, err := fileInput(session, call.Arguments)
 		if err != nil {
 			session.Throw(err)
 		}
 
-		result, err := createFile(session.FS, input.(*CreateFileInput))
+		result, err := filesystem.CreateFile(session.FS, input.(*filesystem.CreateFileInput))
 		if err != nil {
 			session.Throw(err)
 		}
 
-		codeact.SetValue(session, "result", result)
+		SetValue(session, "result", result)
 		return session.VM.ToValue(result)
 	}
-}
-
-func createFile(fsys afero.Fs, input *CreateFileInput) (*CreateFileResult, error) {
-	if !filepath.IsAbs(input.Path) {
-		return nil, codeact.NewError(codeact.PathIsNotAbsolute, "path", input.Path)
-	}
-	path := input.Path
-
-	var existed bool
-	if stat, err := fsys.Stat(path); err == nil {
-		if stat.IsDir() {
-			return nil, codeact.NewError(codeact.PathIsDirectory, "path", path)
-		}
-
-		existed = true
-	}
-
-	err := fsys.MkdirAll(filepath.Dir(path), 0644)
-	if err != nil {
-		return nil, codeact.NewCustomError("could not create the parent directory", []string{
-			"Verify that you have the permissions to create the parent directories",
-			"Create the missing parent directories manually",
-		},
-			"path", path, "error", err)
-	}
-
-	err = afero.WriteFile(fsys, path, []byte(input.Content), 0644)
-	if err != nil {
-		return nil, codeact.NewCustomError(fmt.Sprintf("error writing file %s", path), []string{
-			"Ensure that you have the permission to write to the file",
-		},
-			"path", path, "error", err)
-	}
-
-	return &CreateFileResult{Overwritten: existed}, nil
 }

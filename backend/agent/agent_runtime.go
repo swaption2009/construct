@@ -26,7 +26,7 @@ import (
 	"github.com/furisto/construct/backend/prompt"
 	"github.com/furisto/construct/backend/secret"
 	"github.com/furisto/construct/backend/stream"
-	"github.com/furisto/construct/backend/tool"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/furisto/construct/backend/tool/codeact"
 	"github.com/google/uuid"
 	"github.com/grafana/sobek/ast"
@@ -556,7 +556,7 @@ func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []mo
 		}
 
 		switch toolCall.Tool {
-		case tool.ToolNameCodeInterpreter:
+		case base.ToolNameCodeInterpreter:
 
 			os.WriteFile("/tmp/tool_call.json", []byte(toolCall.Args), 0644)
 			// script, err := parseScript(toolCall.Args)
