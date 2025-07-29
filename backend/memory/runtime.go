@@ -157,6 +157,10 @@ func init() {
 	taskDescTurns := taskFields[7].Descriptor()
 	// task.DefaultTurns holds the default value on creation for the turns field.
 	task.DefaultTurns = taskDescTurns.Default.(int64)
+	// taskDescToolUses is the schema descriptor for tool_uses field.
+	taskDescToolUses := taskFields[8].Descriptor()
+	// task.DefaultToolUses holds the default value on creation for the tool_uses field.
+	task.DefaultToolUses = taskDescToolUses.Default.(map[string]int64)
 	// taskDescID is the schema descriptor for id field.
 	taskDescID := taskFields[0].Descriptor()
 	// task.DefaultID holds the default value on creation for the id field.

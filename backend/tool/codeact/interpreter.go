@@ -19,6 +19,7 @@ type InterpreterArgs struct {
 type InterpreterResult struct {
 	ConsoleOutput      string
 	FunctionExecutions []FunctionCall
+	ToolStats          map[string]int64
 }
 
 type Interpreter struct {
@@ -98,9 +99,15 @@ func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.R
 		executions = []FunctionCall{}
 	}
 
+	toolStats, ok := GetValue[map[string]int64](session, "tool_stats")
+	if !ok {
+		toolStats = make(map[string]int64)
+	}
+
 	return &InterpreterResult{
 		ConsoleOutput:      stdout.String(),
 		FunctionExecutions: executions,
+		ToolStats:          toolStats,
 	}, err
 }
 

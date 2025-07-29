@@ -3,6 +3,7 @@
 package memory
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ type Task struct {
 	Cost float64 `json:"cost,omitempty"`
 	// Turns holds the value of the "turns" field.
 	Turns int64 `json:"turns,omitempty"`
+	// ToolUses holds the value of the "tool_uses" field.
+	ToolUses map[string]int64 `json:"tool_uses,omitempty"`
 	// AgentID holds the value of the "agent_id" field.
 	AgentID uuid.UUID `json:"agent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -81,6 +84,8 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case task.FieldToolUses:
+			values[i] = new([]byte)
 		case task.FieldCost:
 			values[i] = new(sql.NullFloat64)
 		case task.FieldInputTokens, task.FieldOutputTokens, task.FieldCacheWriteTokens, task.FieldCacheReadTokens, task.FieldTurns:
@@ -166,6 +171,14 @@ func (t *Task) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				t.Turns = value.Int64
 			}
+		case task.FieldToolUses:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field tool_uses", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &t.ToolUses); err != nil {
+					return fmt.Errorf("unmarshal field tool_uses: %w", err)
+				}
+			}
 		case task.FieldAgentID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field agent_id", values[i])
@@ -244,6 +257,9 @@ func (t *Task) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("turns=")
 	builder.WriteString(fmt.Sprintf("%v", t.Turns))
+	builder.WriteString(", ")
+	builder.WriteString("tool_uses=")
+	builder.WriteString(fmt.Sprintf("%v", t.ToolUses))
 	builder.WriteString(", ")
 	builder.WriteString("agent_id=")
 	builder.WriteString(fmt.Sprintf("%v", t.AgentID))

@@ -149,6 +149,12 @@ func (tc *TaskCreate) SetNillableTurns(i *int64) *TaskCreate {
 	return tc
 }
 
+// SetToolUses sets the "tool_uses" field.
+func (tc *TaskCreate) SetToolUses(m map[string]int64) *TaskCreate {
+	tc.mutation.SetToolUses(m)
+	return tc
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tc *TaskCreate) SetAgentID(u uuid.UUID) *TaskCreate {
 	tc.mutation.SetAgentID(u)
@@ -244,6 +250,10 @@ func (tc *TaskCreate) defaults() {
 		v := task.DefaultTurns
 		tc.mutation.SetTurns(v)
 	}
+	if _, ok := tc.mutation.ToolUses(); !ok {
+		v := task.DefaultToolUses
+		tc.mutation.SetToolUses(v)
+	}
 	if _, ok := tc.mutation.ID(); !ok {
 		v := task.DefaultID()
 		tc.mutation.SetID(v)
@@ -260,6 +270,9 @@ func (tc *TaskCreate) check() error {
 	}
 	if _, ok := tc.mutation.Turns(); !ok {
 		return &ValidationError{Name: "turns", err: errors.New(`memory: missing required field "Task.turns"`)}
+	}
+	if _, ok := tc.mutation.ToolUses(); !ok {
+		return &ValidationError{Name: "tool_uses", err: errors.New(`memory: missing required field "Task.tool_uses"`)}
 	}
 	return nil
 }
@@ -331,6 +344,10 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.Turns(); ok {
 		_spec.SetField(task.FieldTurns, field.TypeInt64, value)
 		_node.Turns = value
+	}
+	if value, ok := tc.mutation.ToolUses(); ok {
+		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
+		_node.ToolUses = value
 	}
 	if nodes := tc.mutation.MessagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

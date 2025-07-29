@@ -41,6 +41,7 @@ func ConvertTaskStatusToProto(t *memory.Task) *v1.TaskStatus {
 		CacheWriteTokens: t.CacheWriteTokens,
 		CacheReadTokens:  t.CacheReadTokens,
 		Cost:             float64(t.Cost),
+		ToolUses:         t.ToolUses,
 	}
 
 	return &v1.TaskStatus{

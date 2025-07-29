@@ -213,6 +213,12 @@ func (tu *TaskUpdate) AddTurns(i int64) *TaskUpdate {
 	return tu
 }
 
+// SetToolUses sets the "tool_uses" field.
+func (tu *TaskUpdate) SetToolUses(m map[string]int64) *TaskUpdate {
+	tu.mutation.SetToolUses(m)
+	return tu
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tu *TaskUpdate) SetAgentID(u uuid.UUID) *TaskUpdate {
 	tu.mutation.SetAgentID(u)
@@ -389,6 +395,9 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := tu.mutation.AddedTurns(); ok {
 		_spec.AddField(task.FieldTurns, field.TypeInt64, value)
+	}
+	if value, ok := tu.mutation.ToolUses(); ok {
+		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
 	}
 	if tu.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -666,6 +675,12 @@ func (tuo *TaskUpdateOne) AddTurns(i int64) *TaskUpdateOne {
 	return tuo
 }
 
+// SetToolUses sets the "tool_uses" field.
+func (tuo *TaskUpdateOne) SetToolUses(m map[string]int64) *TaskUpdateOne {
+	tuo.mutation.SetToolUses(m)
+	return tuo
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tuo *TaskUpdateOne) SetAgentID(u uuid.UUID) *TaskUpdateOne {
 	tuo.mutation.SetAgentID(u)
@@ -872,6 +887,9 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	}
 	if value, ok := tuo.mutation.AddedTurns(); ok {
 		_spec.AddField(task.FieldTurns, field.TypeInt64, value)
+	}
+	if value, ok := tuo.mutation.ToolUses(); ok {
+		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
 	}
 	if tuo.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

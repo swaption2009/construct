@@ -121,6 +121,9 @@ message TaskUsage {
 
   // cost is the total monetary cost associated with the task execution.
   double cost = 5;
+
+  // tool_uses tracks the number of times each tool was used during the task.
+  map<string, int64> tool_uses = 6;
 }
 
 // CreateTaskRequest contains the parameters needed to create a new task.

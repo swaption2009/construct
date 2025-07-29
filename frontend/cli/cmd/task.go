@@ -33,11 +33,12 @@ type DisplayTask struct {
 }
 
 type DisplayTaskUsage struct {
-	InputTokens      int64   `json:"input_tokens" yaml:"input_tokens"`
-	OutputTokens     int64   `json:"output_tokens" yaml:"output_tokens"`
-	CacheWriteTokens int64   `json:"cache_write_tokens" yaml:"cache_write_tokens"`
-	CacheReadTokens  int64   `json:"cache_read_tokens" yaml:"cache_read_tokens"`
-	Cost             float64 `json:"cost" yaml:"cost"`
+	InputTokens      int64            `json:"input_tokens" yaml:"input_tokens"`
+	OutputTokens     int64            `json:"output_tokens" yaml:"output_tokens"`
+	CacheWriteTokens int64            `json:"cache_write_tokens" yaml:"cache_write_tokens"`
+	CacheReadTokens  int64            `json:"cache_read_tokens" yaml:"cache_read_tokens"`
+	Cost             float64          `json:"cost" yaml:"cost"`
+	ToolUses         map[string]int64 `json:"tool_uses" yaml:"tool_uses"`
 }
 
 func ConvertTaskToDisplay(task *v1.Task) *DisplayTask {
@@ -66,5 +67,6 @@ func ConvertTaskUsageToDisplay(usage *v1.TaskUsage) DisplayTaskUsage {
 		CacheWriteTokens: usage.CacheWriteTokens,
 		CacheReadTokens:  usage.CacheReadTokens,
 		Cost:             usage.Cost,
+		ToolUses:         usage.ToolUses,
 	}
 }

@@ -94,6 +94,20 @@ func ToolNameInterceptor(session *Session, tool Tool, inner func(sobek.FunctionC
 	}
 }
 
+func ToolStatisticsInterceptor(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
+	return func(call sobek.FunctionCall) sobek.Value {
+		toolStats, ok := GetValue[map[string]int64](session, "tool_stats")
+		if !ok {
+			toolStats = make(map[string]int64)
+		}
+		if tool.Name() != "print" {
+			toolStats[tool.Name()]++
+			SetValue(session, "tool_stats", toolStats)
+		}
+		return inner(call)
+	}
+}
+
 type ToolEventPublisher struct {
 	EventHub *stream.EventHub
 }

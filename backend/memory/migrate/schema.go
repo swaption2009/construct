@@ -131,6 +131,7 @@ var (
 		{Name: "cache_read_tokens", Type: field.TypeInt64, Nullable: true},
 		{Name: "cost", Type: field.TypeFloat64, Nullable: true},
 		{Name: "turns", Type: field.TypeInt64, Default: 0},
+		{Name: "tool_uses", Type: field.TypeJSON},
 		{Name: "agent_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// TasksTable holds the schema information for the "tasks" table.
@@ -141,7 +142,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tasks_agents_agent",
-				Columns:    []*schema.Column{TasksColumns[10]},
+				Columns:    []*schema.Column{TasksColumns[11]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

@@ -33,6 +33,8 @@ const (
 	FieldCost = "cost"
 	// FieldTurns holds the string denoting the turns field in the database.
 	FieldTurns = "turns"
+	// FieldToolUses holds the string denoting the tool_uses field in the database.
+	FieldToolUses = "tool_uses"
 	// FieldAgentID holds the string denoting the agent_id field in the database.
 	FieldAgentID = "agent_id"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
@@ -69,6 +71,7 @@ var Columns = []string{
 	FieldCacheReadTokens,
 	FieldCost,
 	FieldTurns,
+	FieldToolUses,
 	FieldAgentID,
 }
 
@@ -91,6 +94,8 @@ var (
 	UpdateDefaultUpdateTime func() time.Time
 	// DefaultTurns holds the default value on creation for the "turns" field.
 	DefaultTurns int64
+	// DefaultToolUses holds the default value on creation for the "tool_uses" field.
+	DefaultToolUses map[string]int64
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )

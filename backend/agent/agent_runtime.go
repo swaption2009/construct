@@ -94,6 +94,7 @@ func NewRuntime(memory *memory.Client, encryption *secret.Client, listener net.L
 	interceptors := []codeact.Interceptor{
 		codeact.InterceptorFunc(codeact.FunctionCallLogInterceptor),
 		codeact.InterceptorFunc(codeact.ToolNameInterceptor),
+		codeact.InterceptorFunc(codeact.ToolStatisticsInterceptor),
 		codeact.NewToolEventPublisher(messageHub),
 	}
 
@@ -275,7 +276,7 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		Message: protoMessage,
 	})
 
-	toolResults, err := rt.callTools(ctx, taskID, message.Content)
+	toolResults, toolStats, err := rt.callTools(ctx, taskID, message.Content)
 	if err != nil {
 		return err
 	}
@@ -287,6 +288,15 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		}
 
 		protoToolResults, err := ConvertMemoryMessageToProto(toolMessage)
+		if err != nil {
+			return err
+		}
+
+		for tool, count := range toolStats {
+			task.ToolUses[tool] += count
+		}
+
+		_, err = task.Update().Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -538,8 +548,9 @@ func (rt *Runtime) saveResponse(ctx context.Context, taskID uuid.UUID, processed
 	return newMessage, nil
 }
 
-func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []model.ContentBlock) ([]ToolResult, error) {
+func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []model.ContentBlock) ([]ToolResult, map[string]int64, error) {
 	var toolResults []ToolResult
+	toolStats := make(map[string]int64)
 
 	for _, block := range content {
 		toolCall, ok := block.(*model.ToolCallBlock)
@@ -551,16 +562,9 @@ func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []mo
 		case base.ToolNameCodeInterpreter:
 
 			os.WriteFile("/tmp/tool_call.json", []byte(toolCall.Args), 0644)
-			// script, err := parseScript(toolCall.Args)
-			// if err != nil {
-			// 	return nil, err
-			// }
-
-			// os.WriteFile("/tmp/script.js", []byte(fmt.Sprintf("const script = `%v`", script)), 0644)
-
 			result, err := rt.interpreter.Interpret(ctx, afero.NewOsFs(), toolCall.Args, taskID)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			toolResults = append(toolResults, &InterpreterToolResult{
@@ -569,13 +573,17 @@ func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []mo
 				FunctionCalls: result.FunctionExecutions,
 				Error:         err,
 			})
+
+			for tool, count := range result.ToolStats {
+				toolStats[tool] += count
+			}
 		default:
 			slog.WarnContext(ctx, "model requested unknown tool", "tool", toolCall.Tool)
 			continue
 		}
 	}
 
-	return toolResults, nil
+	return toolResults, toolStats, nil
 }
 
 func parseScript(raw json.RawMessage) ([]string, error) {
