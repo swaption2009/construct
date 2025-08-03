@@ -93,7 +93,7 @@ When the user asks you to create a new git commit, follow these steps carefully:
 
 ### Key Success Factors
 - Craft meaningful messages that reflect actual changes and their purpose
-- Adapt to each repository's established commit conventions
+- Adapt to each repository's established commit conventions and closely match that style
 
 ## Usage Examples
 %[1]s

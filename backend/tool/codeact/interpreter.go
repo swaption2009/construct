@@ -17,9 +17,9 @@ type InterpreterArgs struct {
 }
 
 type InterpreterResult struct {
-	ConsoleOutput      string
-	FunctionExecutions []FunctionCall
-	ToolStats          map[string]int64
+	ConsoleOutput string
+	FunctionCalls []FunctionCall
+	ToolStats     map[string]int64
 }
 
 type Interpreter struct {
@@ -94,9 +94,9 @@ func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.R
 	_, err = vm.RunString(args.Script)
 	close(done)
 
-	executions, ok := GetValue[[]FunctionCall](session, "executions")
+	callState, ok := GetValue[*FunctionCallState](session, "function_call_state")
 	if !ok {
-		executions = []FunctionCall{}
+		callState = NewFunctionCallState()
 	}
 
 	toolStats, ok := GetValue[map[string]int64](session, "tool_stats")
@@ -105,9 +105,9 @@ func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.R
 	}
 
 	return &InterpreterResult{
-		ConsoleOutput:      stdout.String(),
-		FunctionExecutions: executions,
-		ToolStats:          toolStats,
+		ConsoleOutput: stdout.String(),
+		FunctionCalls: callState.Calls,
+		ToolStats:     toolStats,
 	}, err
 }
 

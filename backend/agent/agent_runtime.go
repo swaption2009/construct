@@ -90,10 +90,10 @@ func NewRuntime(memory *memory.Client, encryption *secret.Client, listener net.L
 	}
 
 	interceptors := []codeact.Interceptor{
-		codeact.InterceptorFunc(codeact.FunctionCallLogInterceptor),
-		codeact.InterceptorFunc(codeact.ToolNameInterceptor),
 		codeact.InterceptorFunc(codeact.ToolStatisticsInterceptor),
+		codeact.InterceptorFunc(codeact.DurableFunctionInterceptor),
 		codeact.NewToolEventPublisher(messageHub),
+		codeact.InterceptorFunc(codeact.ResetTemporarySessionValuesInterceptor),
 	}
 
 	runtime := &Runtime{
@@ -215,8 +215,6 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 			for _, block := range message.Content {
 				switch block := block.(type) {
 				case *model.TextBlock:
-					fmt.Print(block.Text)
-
 					rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
 						Message: &v1.Message{
 							Metadata: &v1.MessageMetadata{
@@ -280,12 +278,7 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 	}
 
 	if len(toolResults) > 0 {
-		toolMessage, err := rt.saveToolResults(ctx, taskID, toolResults)
-		if err != nil {
-			return err
-		}
-
-		protoToolResults, err := ConvertMemoryMessageToProto(toolMessage)
+		_, err := rt.saveToolResults(ctx, taskID, toolResults)
 		if err != nil {
 			return err
 		}
@@ -298,10 +291,6 @@ func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
 		if err != nil {
 			return err
 		}
-
-		rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
-			Message: protoToolResults,
-		})
 	}
 
 	_, err = rt.memory.Task.UpdateOneID(taskID).AddTurns(1).Save(ctx)
@@ -568,7 +557,7 @@ func (rt *Runtime) callTools(ctx context.Context, taskID uuid.UUID, content []mo
 			toolResults = append(toolResults, &InterpreterToolResult{
 				ID:            toolCall.ID,
 				Output:        result.ConsoleOutput,
-				FunctionCalls: result.FunctionExecutions,
+				FunctionCalls: result.FunctionCalls,
 				Error:         err,
 			})
 

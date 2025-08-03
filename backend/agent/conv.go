@@ -3,11 +3,13 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/backend/memory"
 	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/furisto/construct/backend/model"
+	toolbase "github.com/furisto/construct/backend/tool/base"
 	"github.com/furisto/construct/backend/tool/codeact"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -160,6 +162,418 @@ func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
 					},
 				},
 			})
+
+			for _, call := range interpreterResult.FunctionCalls {
+				switch call.ToolName {
+				case toolbase.ToolNameCreateFile:
+					createFileInput := call.Input.CreateFile
+					if createFileInput == nil {
+						slog.Error("create file input not set")
+						continue
+					}
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_CreateFile{
+									CreateFile: &v1.ToolCall_CreateFileInput{
+										Path:    createFileInput.Path,
+										Content: createFileInput.Content,
+									},
+								},
+							},
+						},
+					})
+					createFileResult := call.Output.CreateFile
+					if createFileResult == nil {
+						slog.Error("create file result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_CreateFile{
+									CreateFile: &v1.ToolResult_CreateFileResult{
+										Overwritten: createFileResult.Overwritten,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameEditFile:
+					editFileInput := call.Input.EditFile
+					if editFileInput == nil {
+						slog.Error("edit file input not set")
+						continue
+					}
+
+					var diffs []*v1.ToolCall_EditFileInput_DiffPair
+					for _, diff := range editFileInput.Diffs {
+						diffs = append(diffs, &v1.ToolCall_EditFileInput_DiffPair{
+							Old: diff.Old,
+							New: diff.New,
+						})
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_EditFile{
+									EditFile: &v1.ToolCall_EditFileInput{
+										Path:  editFileInput.Path,
+										Diffs: diffs,
+									},
+								},
+							},
+						},
+					})
+
+					editFileResult := call.Output.EditFile
+					if editFileResult == nil {
+						slog.Error("edit file result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_EditFile{
+									EditFile: &v1.ToolResult_EditFileResult{
+										Path: editFileResult.Path,
+										PatchInfo: &v1.ToolResult_EditFileResult_PatchInfo{
+											Patch:        editFileResult.PatchInfo.Patch,
+											LinesAdded:   int32(editFileResult.PatchInfo.LinesAdded),
+											LinesRemoved: int32(editFileResult.PatchInfo.LinesRemoved),
+										},
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameExecuteCommand:
+					executeCommandInput := call.Input.ExecuteCommand
+					if executeCommandInput == nil {
+						slog.Error("execute command input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_ExecuteCommand{
+									ExecuteCommand: &v1.ToolCall_ExecuteCommandInput{
+										Command: executeCommandInput.Command,
+									},
+								},
+							},
+						},
+					})
+
+					executeCommandResult := call.Output.ExecuteCommand
+					if executeCommandResult == nil {
+						slog.Error("execute command result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_ExecuteCommand{
+									ExecuteCommand: &v1.ToolResult_ExecuteCommandResult{
+										Stdout:   executeCommandResult.Stdout,
+										Stderr:   executeCommandResult.Stderr,
+										ExitCode: int32(executeCommandResult.ExitCode),
+										Command:  executeCommandResult.Command,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameFindFile:
+					findFileInput := call.Input.FindFile
+					if findFileInput == nil {
+						slog.Error("find file input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_FindFile{
+									FindFile: &v1.ToolCall_FindFileInput{
+										Pattern:        findFileInput.Pattern,
+										Path:           findFileInput.Path,
+										ExcludePattern: findFileInput.ExcludePattern,
+										MaxResults:     int32(findFileInput.MaxResults),
+									},
+								},
+							},
+						},
+					})
+
+					findFileResult := call.Output.FindFile
+					if findFileResult == nil {
+						slog.Error("find file result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_FindFile{
+									FindFile: &v1.ToolResult_FindFileResult{
+										Files:          findFileResult.Files,
+										TotalFiles:     int32(findFileResult.TotalFiles),
+										TruncatedCount: int32(findFileResult.TruncatedCount),
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameGrep:
+					grepInput := call.Input.Grep
+					if grepInput == nil {
+						slog.Error("grep input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_Grep{
+									Grep: &v1.ToolCall_GrepInput{
+										Query:          grepInput.Query,
+										Path:           grepInput.Path,
+										IncludePattern: grepInput.IncludePattern,
+										ExcludePattern: grepInput.ExcludePattern,
+										CaseSensitive:  grepInput.CaseSensitive,
+										MaxResults:     int32(grepInput.MaxResults),
+									},
+								},
+							},
+						},
+					})
+
+					grepResult := call.Output.Grep
+					if grepResult == nil {
+						slog.Error("grep result not set")
+						continue
+					}
+
+					var matches []*v1.ToolResult_GrepResult_GrepMatch
+					for _, match := range grepResult.Matches {
+						var contextLines []*v1.ToolResult_GrepResult_ContextLine
+						for _, context := range match.Context {
+							contextLines = append(contextLines, &v1.ToolResult_GrepResult_ContextLine{
+								LineNumber: int32(context.LineNumber),
+								Content:    context.Content,
+							})
+						}
+						matches = append(matches, &v1.ToolResult_GrepResult_GrepMatch{
+							FilePath:    match.FilePath,
+							LineNumber:  int32(match.LineNumber),
+							LineContent: match.LineContent,
+							Context:     contextLines,
+						})
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_Grep{
+									Grep: &v1.ToolResult_GrepResult{
+										Matches:       matches,
+										TotalMatches:  int32(grepResult.TotalMatches),
+										SearchedFiles: int32(grepResult.SearchedFiles),
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameListFiles:
+					listFilesInput := call.Input.ListFiles
+					if listFilesInput == nil {
+						slog.Error("list files input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_ListFiles{
+									ListFiles: &v1.ToolCall_ListFilesInput{
+										Path:      listFilesInput.Path,
+										Recursive: listFilesInput.Recursive,
+									},
+								},
+							},
+						},
+					})
+
+					listFilesResult := call.Output.ListFiles
+					if listFilesResult == nil {
+						slog.Error("list files result not set")
+						continue
+					}
+
+					var entries []*v1.ToolResult_ListFilesResult_DirectoryEntry
+					for _, entry := range listFilesResult.Entries {
+						entries = append(entries, &v1.ToolResult_ListFilesResult_DirectoryEntry{
+							Name: entry.Name,
+							Type: entry.Type,
+							Size: entry.Size,
+						})
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_ListFiles{
+									ListFiles: &v1.ToolResult_ListFilesResult{
+										Path:    listFilesResult.Path,
+										Entries: entries,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameReadFile:
+					readFileInput := call.Input.ReadFile
+					if readFileInput == nil {
+						slog.Error("read file input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_ReadFile{
+									ReadFile: &v1.ToolCall_ReadFileInput{
+										Path: readFileInput.Path,
+									},
+								},
+							},
+						},
+					})
+
+					readFileResult := call.Output.ReadFile
+					if readFileResult == nil {
+						slog.Error("read file result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_ReadFile{
+									ReadFile: &v1.ToolResult_ReadFileResult{
+										Path:    readFileResult.Path,
+										Content: readFileResult.Content,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameSubmitReport:
+					submitReportInput := call.Input.SubmitReport
+					if submitReportInput == nil {
+						slog.Error("submit report input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_SubmitReport{
+									SubmitReport: &v1.ToolCall_SubmitReportInput{
+										Summary:      submitReportInput.Summary,
+										Completed:    submitReportInput.Completed,
+										Deliverables: submitReportInput.Deliverables,
+										NextSteps:    submitReportInput.NextSteps,
+									},
+								},
+							},
+						},
+					})
+
+					submitReportResult := call.Output.SubmitReport
+					if submitReportResult == nil {
+						slog.Error("submit report result not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolResult{
+							ToolResult: &v1.ToolResult{
+								ToolName: call.ToolName,
+								Result: &v1.ToolResult_SubmitReport{
+									SubmitReport: &v1.ToolResult_SubmitReportResult{
+										Summary:      submitReportResult.Summary,
+										Completed:    submitReportResult.Completed,
+										Deliverables: submitReportResult.Deliverables,
+										NextSteps:    submitReportResult.NextSteps,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameAskUser:
+					askUserInput := call.Input.AskUser
+					if askUserInput == nil {
+						slog.Error("ask user input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_AskUser{
+									AskUser: &v1.ToolCall_AskUserInput{
+										Question: askUserInput.Question,
+										Options:  askUserInput.Options,
+									},
+								},
+							},
+						},
+					})
+				case toolbase.ToolNameHandoff:
+					handoffInput := call.Input.Handoff
+					if handoffInput == nil {
+						slog.Error("handoff input not set")
+						continue
+					}
+
+					contentParts = append(contentParts, &v1.MessagePart{
+						Data: &v1.MessagePart_ToolCall{
+							ToolCall: &v1.ToolCall{
+								ToolName: call.ToolName,
+								Input: &v1.ToolCall_Handoff{
+									Handoff: &v1.ToolCall_HandoffInput{
+										RequestedAgent:  handoffInput.RequestedAgent,
+										HandoverMessage: handoffInput.HandoverMessage,
+									},
+								},
+							},
+						},
+					})
+				}
+			}
 		}
 	}
 
@@ -281,51 +695,3 @@ func ConvertModelUsageToMemory(usage *model.Usage) *types.MessageUsage {
 	}
 }
 
-// func ConvertToolResultsToProto(results []ToolResult) ([]*v1.MessagePart, error) {
-// 	var protoToolResults []*v1.MessagePart
-// 	for _, result := range results {
-// 		switch result := result.(type) {
-// 		case *InterpreterToolResult:
-// 			interpreterFuncResults, err := convertFunctionCallsToProto(result.FunctionCalls)
-// 			if err != nil {
-// 				return nil, fmt.Errorf("failed to convert tool result to proto: %w", err)
-// 			}
-// 			protoToolResults = append(protoToolResults, interpreterFuncResults...)
-// 		}
-// 	}
-// 	return protoToolResults, nil
-// }
-
-// func convertFunctionCallsToProto(functionCalls []codeact.FunctionCall) ([]*v1.MessagePart, error) {
-// 	protoFunctionCalls := make([]*v1.MessagePart, 0, len(functionCalls))
-// 	for _, call := range functionCalls {
-// 		switch call.ToolName {
-// 		case tool.ToolNameSubmitReport:
-// 			submitReport, ok := call.Output.(*tool.SubmitReportResult)
-// 			if !ok {
-// 				return nil, fmt.Errorf("%s has invalid tool result type: %T", call.ToolName, call.Output)
-// 			}
-// 			protoFunctionCalls = append(protoFunctionCalls, &v1.MessagePart{
-// 				Data: &v1.MessagePart_SubmitReport_{
-// 					SubmitReport: &v1.MessagePart_SubmitReport{
-// 						Summary:      submitReport.Summary,
-// 						Completed:    submitReport.Completed,
-// 						Deliverables: submitReport.Deliverables,
-// 						NextSteps:    submitReport.NextSteps,
-// 					},
-// 				},
-// 			})
-// 		default:
-// 			protoFunctionCalls = append(protoFunctionCalls, &v1.MessagePart{
-// 				Data: &v1.MessagePart_ToolResult_{
-// 					ToolResult: &v1.MessagePart_ToolResult{
-// 						ToolName: v1.ToolName_UNSPECIFIED,
-// 						Result:   fmt.Sprintf("%v", call.Output),
-// 					},
-// 				},
-// 			})
-// 		}
-// 	}
-
-// 	return protoFunctionCalls, nil
-// }

@@ -1,14 +1,12 @@
 package codeact
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"log/slog"
 	"time"
 
 	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/backend/stream"
+	"github.com/furisto/construct/backend/tool/base"
 	"github.com/furisto/construct/backend/tool/communication"
 	"github.com/furisto/construct/backend/tool/filesystem"
 	"github.com/furisto/construct/backend/tool/system"
@@ -30,67 +28,182 @@ func (i InterceptorFunc) Intercept(session *Session, tool Tool, inner func(sobek
 
 var _ Interceptor = InterceptorFunc(nil)
 
-type FunctionCall struct {
-	ToolName string
-	Input    []string
-	Output   any
+type FunctionCallInput struct {
+	CreateFile     *filesystem.CreateFileInput      `json:"create_file,omitempty"`
+	EditFile       *filesystem.EditFileInput        `json:"edit_file,omitempty"`
+	ExecuteCommand *system.ExecuteCommandInput      `json:"execute_command,omitempty"`
+	FindFile       *filesystem.FindFileInput        `json:"find_file,omitempty"`
+	Grep           *filesystem.GrepInput            `json:"grep,omitempty"`
+	ListFiles      *filesystem.ListFilesInput       `json:"list_files,omitempty"`
+	ReadFile       *filesystem.ReadFileInput        `json:"read_file,omitempty"`
+	SubmitReport   *communication.SubmitReportInput `json:"submit_report,omitempty"`
+	AskUser        *communication.AskUserInput      `json:"ask_user,omitempty"`
+	Handoff        *communication.HandoffInput      `json:"handoff,omitempty"`
 }
 
-func FunctionCallLogInterceptor(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
-	return func(call sobek.FunctionCall) sobek.Value {
-		functionResult := FunctionCall{
-			ToolName: tool.Name(),
-		}
-		for _, arg := range call.Arguments {
-			exported, err := export(arg)
-			if err != nil {
-				slog.Error("failed to export argument", "error", err)
-			}
-			functionResult.Input = append(functionResult.Input, exported)
-		}
+type FunctionCallOutput struct {
+	CreateFile     *filesystem.CreateFileResult      `json:"create_file,omitempty"`
+	EditFile       *filesystem.EditFileResult        `json:"edit_file,omitempty"`
+	ExecuteCommand *system.ExecuteCommandResult      `json:"execute_command,omitempty"`
+	FindFile       *filesystem.FindFileResult        `json:"find_file,omitempty"`
+	Grep           *filesystem.GrepResult            `json:"grep,omitempty"`
+	ListFiles      *filesystem.ListFilesResult       `json:"list_files,omitempty"`
+	ReadFile       *filesystem.ReadFileResult        `json:"read_file,omitempty"`
+	SubmitReport   *communication.SubmitReportResult `json:"submit_report,omitempty"`
+	AskUser        *communication.AskUserResult      `json:"ask_user,omitempty"`
+}
 
-		result := inner(call)
-		if tool.Name() != "print" {
-			functionResult.Output = result.Export()
-			executions, ok := GetValue[[]FunctionCall](session, "executions")
-			if !ok {
-				executions = []FunctionCall{}
-			}
-			executions = append(executions, functionResult)
-			SetValue(session, "executions", executions)
-		}
+type FunctionCall struct {
+	ToolName string             `json:"tool_name"`
+	Input    FunctionCallInput  `json:"input"`
+	Output   FunctionCallOutput `json:"output"`
+	Index    int                `json:"index"`
+}
 
-		return result
+type FunctionCallState struct {
+	Calls []FunctionCall
+	Index int
+}
+
+func NewFunctionCallState() *FunctionCallState {
+	return &FunctionCallState{
+		Calls: []FunctionCall{},
+		Index: 0,
 	}
 }
 
-func export(value sobek.Value) (string, error) {
-	switch kind := value.(type) {
-	case sobek.String:
-		return kind.String(), nil
-	case *sobek.Object:
-		jsonObject, err := kind.MarshalJSON()
-		if err != nil {
-			return "", NewError(Internal, "failed to marshal object")
+func convertToFunctionCallInput(toolName string, input any) FunctionCallInput {
+	var result FunctionCallInput
+
+	switch toolName {
+	case base.ToolNameCreateFile:
+		if v, ok := input.(*filesystem.CreateFileInput); ok {
+			result.CreateFile = v
 		}
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, jsonObject, "", "  ")
-		if err != nil {
-			return "", NewError(Internal, "failed to format object")
-		} else {
-			return prettyJSON.String(), nil
+	case base.ToolNameEditFile:
+		if v, ok := input.(*filesystem.EditFileInput); ok {
+			result.EditFile = v
+		}
+	case base.ToolNameExecuteCommand:
+		if v, ok := input.(*system.ExecuteCommandInput); ok {
+			result.ExecuteCommand = v
+		}
+	case base.ToolNameFindFile:
+		if v, ok := input.(*filesystem.FindFileInput); ok {
+			result.FindFile = v
+		}
+	case base.ToolNameGrep:
+		if v, ok := input.(*filesystem.GrepInput); ok {
+			result.Grep = v
+		}
+	case base.ToolNameListFiles:
+		if v, ok := input.(*filesystem.ListFilesInput); ok {
+			result.ListFiles = v
+		}
+	case base.ToolNameReadFile:
+		if v, ok := input.(*filesystem.ReadFileInput); ok {
+			result.ReadFile = v
+		}
+	case base.ToolNameSubmitReport:
+		if v, ok := input.(*communication.SubmitReportInput); ok {
+			result.SubmitReport = v
+		}
+	case base.ToolNameAskUser:
+		if v, ok := input.(*communication.AskUserInput); ok {
+			result.AskUser = v
+		}
+	case base.ToolNameHandoff:
+		if v, ok := input.(*communication.HandoffInput); ok {
+			result.Handoff = v
 		}
 	default:
-		return "", NewError(Internal, fmt.Sprintf("unknown type: %T", kind))
+		slog.Error("unknown tool name", "tool_name", toolName)
 	}
+
+	return result
 }
 
-func ToolNameInterceptor(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
+func convertToFunctionCallOutput(toolName string, output any) FunctionCallOutput {
+	var result FunctionCallOutput
+
+	switch toolName {
+	case base.ToolNameCreateFile:
+		if v, ok := output.(*filesystem.CreateFileResult); ok {
+			result.CreateFile = v
+		}
+	case base.ToolNameEditFile:
+		if v, ok := output.(*filesystem.EditFileResult); ok {
+			result.EditFile = v
+		}
+	case base.ToolNameExecuteCommand:
+		if v, ok := output.(*system.ExecuteCommandResult); ok {
+			result.ExecuteCommand = v
+		}
+	case base.ToolNameFindFile:
+		if v, ok := output.(*filesystem.FindFileResult); ok {
+			result.FindFile = v
+		}
+	case base.ToolNameGrep:
+		if v, ok := output.(*filesystem.GrepResult); ok {
+			result.Grep = v
+		}
+	case base.ToolNameListFiles:
+		if v, ok := output.(*filesystem.ListFilesResult); ok {
+			result.ListFiles = v
+		}
+	case base.ToolNameReadFile:
+		if v, ok := output.(*filesystem.ReadFileResult); ok {
+			result.ReadFile = v
+		}
+	case base.ToolNameSubmitReport:
+		if v, ok := output.(*communication.SubmitReportResult); ok {
+			result.SubmitReport = v
+		}
+	case base.ToolNameAskUser:
+		if v, ok := output.(*communication.AskUserResult); ok {
+			result.AskUser = v
+		}
+	default:
+		slog.Error("unknown tool name", "tool_name", toolName)
+	}
+
+	return result
+}
+
+func DurableFunctionInterceptor(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
-		session.CurrentTool = tool.Name()
-		res := inner(call)
-		session.CurrentTool = ""
-		return res
+		if tool.Name() != base.ToolNamePrint {
+			callState, ok := GetValue[*FunctionCallState](session, "function_call_state")
+			if !ok {
+				callState = NewFunctionCallState()
+			}
+			functionCall := FunctionCall{
+				ToolName: tool.Name(),
+				Index:    callState.Index,
+			}
+
+			input, err := tool.Input(session, call.Arguments)
+			if err != nil {
+				slog.Error("failed to get tool input", "error", err)
+			}
+			functionCall.Input = convertToFunctionCallInput(tool.Name(), input)
+
+			result := inner(call)
+
+			raw, ok := GetValue[any](session, "result")
+			if !ok {
+				slog.Error("failed to get result", "error", err)
+			}
+
+			functionCall.Output = convertToFunctionCallOutput(tool.Name(), raw)
+			callState.Calls = append(callState.Calls, functionCall)
+			callState.Index++
+			SetValue(session, "function_call_state", callState)
+
+			return result
+		}
+
+		return inner(call)
 	}
 }
 
@@ -100,10 +213,17 @@ func ToolStatisticsInterceptor(session *Session, tool Tool, inner func(sobek.Fun
 		if !ok {
 			toolStats = make(map[string]int64)
 		}
-		if tool.Name() != "print" {
+		if tool.Name() != base.ToolNamePrint {
 			toolStats[tool.Name()]++
 			SetValue(session, "tool_stats", toolStats)
 		}
+		return inner(call)
+	}
+}
+
+func ResetTemporarySessionValuesInterceptor(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
+	return func(call sobek.FunctionCall) sobek.Value {
+		UnsetValue(session, "result")
 		return inner(call)
 	}
 }
@@ -120,29 +240,27 @@ func NewToolEventPublisher(eventHub *stream.EventHub) *ToolEventPublisher {
 
 func (p *ToolEventPublisher) Intercept(session *Session, tool Tool, inner func(sobek.FunctionCall) sobek.Value) func(sobek.FunctionCall) sobek.Value {
 	return func(call sobek.FunctionCall) sobek.Value {
-		defer UnsetValue(session, "result")
-
-		toolCall, err := convertArgumentsToProtoToolCall(tool, call.Arguments, session)
-		if err != nil {
-			slog.Error("failed to convert arguments to proto tool call", "error", err)
-		}
-		p.publishToolEvent(session.TaskID, toolCall, v1.MessageRole_MESSAGE_ROLE_ASSISTANT)
-
-		result := inner(call)
-		raw, ok := GetValue[any](session, "result")
-
-		if ok {
-			toolResult, err := convertResultToProtoToolResult(tool.Name(), raw)
+		if tool.Name() != base.ToolNamePrint {
+			toolCall, err := convertArgumentsToProtoToolCall(tool, call.Arguments, session)
 			if err != nil {
-				slog.Error("failed to convert result to proto tool result", "error", err)
+				slog.Error("failed to convert arguments to proto tool call", "error", err)
 			}
-			if toolResult != nil {
-				fmt.Printf("toolResult: %+v\n", toolResult)
-			}
-			p.publishToolEvent(session.TaskID, toolResult, v1.MessageRole_MESSAGE_ROLE_SYSTEM)
-		}
+			p.publishToolEvent(session.TaskID, toolCall, v1.MessageRole_MESSAGE_ROLE_ASSISTANT)
 
-		return result
+			result := inner(call)
+			raw, ok := GetValue[any](session, "result")
+
+			if ok {
+				toolResult, err := convertResultToProtoToolResult(tool.Name(), raw)
+				if err != nil {
+					slog.Error("failed to convert result to proto tool result", "error", err)
+				}
+				p.publishToolEvent(session.TaskID, toolResult, v1.MessageRole_MESSAGE_ROLE_SYSTEM)
+			}
+			return result
+		} else {
+			return inner(call)
+		}
 	}
 }
 
@@ -265,8 +383,6 @@ func convertArgumentsToProtoToolCall(tooCall Tool, arguments []sobek.Value, sess
 				NextSteps:    input.NextSteps,
 			},
 		}
-	case *communication.PrintInput:
-		return nil, nil
 	default:
 		return nil, shared.Errorf(shared.ErrorSourceSystem, "unknown tool input type: %T", input)
 	}
