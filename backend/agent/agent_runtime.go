@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -65,14 +66,15 @@ func WithConcurrency(concurrency int) RuntimeOption {
 }
 
 type Runtime struct {
-	api         *api.Server
-	memory      *memory.Client
-	encryption  *secret.Client
-	eventHub    *stream.EventHub
-	concurrency int
-	queue       workqueue.TypedDelayingInterface[uuid.UUID]
-	running     atomic.Bool
-	interpreter *codeact.Interpreter
+	api          *api.Server
+	memory       *memory.Client
+	encryption   *secret.Client
+	eventHub     *stream.EventHub
+	concurrency  int
+	queue        workqueue.TypedDelayingInterface[uuid.UUID]
+	running      atomic.Bool
+	interpreter  *codeact.Interpreter
+	runningTasks *SyncMap[uuid.UUID, context.CancelFunc]
 }
 
 func NewRuntime(memory *memory.Client, encryption *secret.Client, listener net.Listener, opts ...RuntimeOption) (*Runtime, error) {
@@ -101,10 +103,11 @@ func NewRuntime(memory *memory.Client, encryption *secret.Client, listener net.L
 		memory:     memory,
 		encryption: encryption,
 
-		eventHub:    messageHub,
-		concurrency: options.Concurrency,
-		queue:       queue,
-		interpreter: codeact.NewInterpreter(options.Tools, interceptors),
+		eventHub:     messageHub,
+		concurrency:  options.Concurrency,
+		queue:        queue,
+		interpreter:  codeact.NewInterpreter(options.Tools, interceptors),
+		runningTasks: NewSyncMap[uuid.UUID, context.CancelFunc](),
 	}
 
 	api := api.NewServer(runtime, listener)
@@ -140,7 +143,7 @@ func (rt *Runtime) Run(ctx context.Context) error {
 				}
 				err := rt.processTask(ctx, taskID)
 				if err != nil {
-					slog.Error("failed to process task", "error", err)
+					rt.publishError(err, taskID)
 				}
 			}
 		}()
@@ -172,7 +175,30 @@ func (rt *Runtime) Run(ctx context.Context) error {
 	}
 }
 
+func (rt *Runtime) publishError(err error, taskID uuid.UUID) {
+	if err != nil {
+		slog.Error("failed to process task", "error", err, "task_id", taskID)
+	}
+
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+
+	msg := NewSystemMessage(taskID, WithContent(&v1.MessagePart{
+		Data: &v1.MessagePart_Error_{Error: &v1.MessagePart_Error{Message: err.Error()}},
+	}))
+
+	rt.eventHub.Publish(taskID, &v1.SubscribeResponse{
+		Message: msg,
+	})
+}
+
 func (rt *Runtime) processTask(ctx context.Context, taskID uuid.UUID) error {
+	ctx, cancel := context.WithCancel(ctx)
+	rt.runningTasks.Set(taskID, cancel)
+	defer rt.runningTasks.Delete(taskID)
+	defer cancel()
+
 	defer rt.queue.Done(taskID)
 
 	task, agent, err := rt.fetchTaskWithAgent(ctx, taskID)
@@ -630,4 +656,105 @@ func (rt *Runtime) TriggerReconciliation(taskID uuid.UUID) {
 
 func (rt *Runtime) EventHub() *stream.EventHub {
 	return rt.eventHub
+}
+
+func (rt *Runtime) CancelTask(taskID uuid.UUID) {
+	cancel, ok := rt.runningTasks.Get(taskID)
+	if !ok {
+		return
+	}
+
+	cancel()
+}
+
+type SyncMap[K comparable, V any] struct {
+	mu sync.RWMutex
+	m  map[K]V
+}
+
+func NewSyncMap[K comparable, V any]() *SyncMap[K, V] {
+	return &SyncMap[K, V]{
+		m:  make(map[K]V),
+		mu: sync.RWMutex{},
+	}
+}
+
+func (sm *SyncMap[K, V]) Get(key K) (V, bool) {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	val, ok := sm.m[key]
+	return val, ok
+}
+
+func (sm *SyncMap[K, V]) Set(key K, value V) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	sm.m[key] = value
+}
+
+func (sm *SyncMap[K, V]) Delete(key K) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+	delete(sm.m, key)
+}
+
+func (sm *SyncMap[K, V]) Len() int {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return len(sm.m)
+}
+
+func WithRole(role v1.MessageRole) func(*v1.Message) {
+	return func(msg *v1.Message) {
+		msg.Metadata.Role = role
+	}
+}
+
+func WithContent(content *v1.MessagePart) func(*v1.Message) {
+	return func(msg *v1.Message) {
+		msg.Spec.Content = append(msg.Spec.Content, content)
+	}
+}
+
+func NewAssistantMessage(taskID uuid.UUID, options ...func(*v1.Message)) *v1.Message {
+	msg := NewMessage(taskID, WithRole(v1.MessageRole_MESSAGE_ROLE_ASSISTANT))
+
+	for _, option := range options {
+		option(msg)
+	}
+
+	return msg
+}
+
+func NewSystemMessage(taskID uuid.UUID, options ...func(*v1.Message)) *v1.Message {
+	msg := NewMessage(taskID, WithRole(v1.MessageRole_MESSAGE_ROLE_SYSTEM))
+
+	for _, option := range options {
+		option(msg)
+	}
+
+	return msg
+}
+
+func NewMessage(taskID uuid.UUID, options ...func(*v1.Message)) *v1.Message {
+	msg := &v1.Message{
+		Metadata: &v1.MessageMetadata{
+			Id:        uuid.New().String(),
+			TaskId:    taskID.String(),
+			CreatedAt: timestamppb.New(time.Now()),
+			UpdatedAt: timestamppb.New(time.Now()),
+			Role:      v1.MessageRole_MESSAGE_ROLE_ASSISTANT,
+		},
+		Spec: &v1.MessageSpec{},
+		Status: &v1.MessageStatus{
+			ContentState:    v1.ContentStatus_CONTENT_STATUS_COMPLETE,
+			IsFinalResponse: false,
+		},
+	}
+
+	for _, option := range options {
+		option(msg)
+	}
+
+	return msg
 }

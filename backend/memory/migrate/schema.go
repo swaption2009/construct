@@ -132,6 +132,7 @@ var (
 		{Name: "cost", Type: field.TypeFloat64, Nullable: true},
 		{Name: "turns", Type: field.TypeInt64, Default: 0},
 		{Name: "tool_uses", Type: field.TypeJSON},
+		{Name: "desired_phase", Type: field.TypeEnum, Enums: []string{"unspecified", "running", "awaiting", "suspended"}, Default: "unspecified"},
 		{Name: "agent_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// TasksTable holds the schema information for the "tasks" table.
@@ -142,7 +143,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tasks_agents_agent",
-				Columns:    []*schema.Column{TasksColumns[11]},
+				Columns:    []*schema.Column{TasksColumns[12]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

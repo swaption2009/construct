@@ -128,7 +128,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC:
 			return m, m.handleCtrlC()
 		case tea.KeyEsc:
-			return m, tea.Quit
+			m.handleEsc()
 		default:
 			cmds = append(cmds, m.onKeyPressed(msg))
 		}
@@ -140,6 +140,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// slog.Info("processing message", "message", msg)
 		m.processMessage(msg)
 		m.updateViewportContent()
+
+	case *v1.TaskEvent:
+		m.processTaskEvent(msg)
 	}
 
 	if !m.showHelp {
@@ -228,6 +231,18 @@ func (m *model) handleCtrlC() tea.Cmd {
 	return nil
 }
 
+func (m *model) handleEsc() {
+	_, err := m.apiClient.Task().SuspendTask(m.ctx, &connect.Request[v1.SuspendTaskRequest]{
+		Msg: &v1.SuspendTaskRequest{
+			TaskId: m.task.Metadata.Id,
+		},
+	})
+	
+	if err != nil {
+		slog.Error("failed to suspend task", "error", err)
+	}
+}
+
 func (m *model) onMessageSend(_ tea.KeyMsg) tea.Cmd {
 	if m.input.Value() != "" {
 		userInput := strings.TrimSpace(m.input.Value())
@@ -303,6 +318,11 @@ func (m *model) processMessage(msg *v1.Message) {
 			m.messages = append(m.messages, m.createToolCallMessage(data.ToolCall, msg.Metadata.CreatedAt.AsTime()))
 		case *v1.MessagePart_ToolResult:
 			m.messages = append(m.messages, m.createToolResultMessage(data.ToolResult, msg.Metadata.CreatedAt.AsTime()))
+		case *v1.MessagePart_Error_:
+			m.messages = append(m.messages, &errorMessage{
+				content:   data.Error.Message,
+				timestamp: msg.Metadata.CreatedAt.AsTime(),
+			})
 		}
 	}
 
@@ -314,6 +334,23 @@ func (m *model) processMessage(msg *v1.Message) {
 			CacheReadTokens:  msg.Status.Usage.CacheReadTokens,
 			Cost:             msg.Status.Usage.Cost,
 		}
+	}
+}
+
+func (m *model) processTaskEvent(msg *v1.TaskEvent) {
+	if msg.TaskId == m.task.Metadata.Id {
+		resp, err := m.apiClient.Task().GetTask(m.ctx, &connect.Request[v1.GetTaskRequest]{
+			Msg: &v1.GetTaskRequest{
+				Id: msg.TaskId,
+			},
+		})
+		if err != nil {
+			slog.Error("failed to get task", "error", err)
+			return
+		}
+
+		m.task = resp.Msg.Task
+		m.lastUsage = resp.Msg.Task.Status.Usage
 	}
 }
 

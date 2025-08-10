@@ -233,3 +233,13 @@ func (h *TaskHandler) Subscribe(ctx context.Context, req *connect.Request[v1.Sub
 
 	return nil
 }
+
+func (h *TaskHandler) SuspendTask(ctx context.Context, req *connect.Request[v1.SuspendTaskRequest]) (*connect.Response[v1.SuspendTaskResponse], error) {
+	taskID, err := uuid.Parse(req.Msg.TaskId)
+	if err != nil {
+		return nil, apiError(connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid task ID format: %w", err)))
+	}
+
+	h.runtime.CancelTask(taskID)
+	return connect.NewResponse(&v1.SuspendTaskResponse{}), nil
+}

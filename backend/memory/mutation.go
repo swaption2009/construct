@@ -4218,6 +4218,7 @@ type TaskMutation struct {
 	turns                 *int64
 	addturns              *int64
 	tool_uses             *map[string]int64
+	desired_phase         *types.TaskPhase
 	clearedFields         map[string]struct{}
 	messages              map[uuid.UUID]struct{}
 	removedmessages       map[uuid.UUID]struct{}
@@ -4896,6 +4897,42 @@ func (m *TaskMutation) ResetToolUses() {
 	m.tool_uses = nil
 }
 
+// SetDesiredPhase sets the "desired_phase" field.
+func (m *TaskMutation) SetDesiredPhase(tp types.TaskPhase) {
+	m.desired_phase = &tp
+}
+
+// DesiredPhase returns the value of the "desired_phase" field in the mutation.
+func (m *TaskMutation) DesiredPhase() (r types.TaskPhase, exists bool) {
+	v := m.desired_phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDesiredPhase returns the old "desired_phase" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldDesiredPhase(ctx context.Context) (v types.TaskPhase, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDesiredPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDesiredPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDesiredPhase: %w", err)
+	}
+	return oldValue.DesiredPhase, nil
+}
+
+// ResetDesiredPhase resets all changes to the "desired_phase" field.
+func (m *TaskMutation) ResetDesiredPhase() {
+	m.desired_phase = nil
+}
+
 // SetAgentID sets the "agent_id" field.
 func (m *TaskMutation) SetAgentID(u uuid.UUID) {
 	m.agent = &u
@@ -5060,7 +5097,7 @@ func (m *TaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TaskMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.create_time != nil {
 		fields = append(fields, task.FieldCreateTime)
 	}
@@ -5090,6 +5127,9 @@ func (m *TaskMutation) Fields() []string {
 	}
 	if m.tool_uses != nil {
 		fields = append(fields, task.FieldToolUses)
+	}
+	if m.desired_phase != nil {
+		fields = append(fields, task.FieldDesiredPhase)
 	}
 	if m.agent != nil {
 		fields = append(fields, task.FieldAgentID)
@@ -5122,6 +5162,8 @@ func (m *TaskMutation) Field(name string) (ent.Value, bool) {
 		return m.Turns()
 	case task.FieldToolUses:
 		return m.ToolUses()
+	case task.FieldDesiredPhase:
+		return m.DesiredPhase()
 	case task.FieldAgentID:
 		return m.AgentID()
 	}
@@ -5153,6 +5195,8 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldTurns(ctx)
 	case task.FieldToolUses:
 		return m.OldToolUses(ctx)
+	case task.FieldDesiredPhase:
+		return m.OldDesiredPhase(ctx)
 	case task.FieldAgentID:
 		return m.OldAgentID(ctx)
 	}
@@ -5233,6 +5277,13 @@ func (m *TaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetToolUses(v)
+		return nil
+	case task.FieldDesiredPhase:
+		v, ok := value.(types.TaskPhase)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDesiredPhase(v)
 		return nil
 	case task.FieldAgentID:
 		v, ok := value.(uuid.UUID)
@@ -5439,6 +5490,9 @@ func (m *TaskMutation) ResetField(name string) error {
 		return nil
 	case task.FieldToolUses:
 		m.ResetToolUses()
+		return nil
+	case task.FieldDesiredPhase:
+		m.ResetDesiredPhase()
 		return nil
 	case task.FieldAgentID:
 		m.ResetAgentID()

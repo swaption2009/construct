@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/furisto/construct/backend/memory/agent"
 	"github.com/furisto/construct/backend/memory/message"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/furisto/construct/backend/memory/task"
 	"github.com/google/uuid"
 )
@@ -155,6 +156,20 @@ func (tc *TaskCreate) SetToolUses(m map[string]int64) *TaskCreate {
 	return tc
 }
 
+// SetDesiredPhase sets the "desired_phase" field.
+func (tc *TaskCreate) SetDesiredPhase(tp types.TaskPhase) *TaskCreate {
+	tc.mutation.SetDesiredPhase(tp)
+	return tc
+}
+
+// SetNillableDesiredPhase sets the "desired_phase" field if the given value is not nil.
+func (tc *TaskCreate) SetNillableDesiredPhase(tp *types.TaskPhase) *TaskCreate {
+	if tp != nil {
+		tc.SetDesiredPhase(*tp)
+	}
+	return tc
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tc *TaskCreate) SetAgentID(u uuid.UUID) *TaskCreate {
 	tc.mutation.SetAgentID(u)
@@ -254,6 +269,10 @@ func (tc *TaskCreate) defaults() {
 		v := task.DefaultToolUses
 		tc.mutation.SetToolUses(v)
 	}
+	if _, ok := tc.mutation.DesiredPhase(); !ok {
+		v := task.DefaultDesiredPhase
+		tc.mutation.SetDesiredPhase(v)
+	}
 	if _, ok := tc.mutation.ID(); !ok {
 		v := task.DefaultID()
 		tc.mutation.SetID(v)
@@ -273,6 +292,14 @@ func (tc *TaskCreate) check() error {
 	}
 	if _, ok := tc.mutation.ToolUses(); !ok {
 		return &ValidationError{Name: "tool_uses", err: errors.New(`memory: missing required field "Task.tool_uses"`)}
+	}
+	if _, ok := tc.mutation.DesiredPhase(); !ok {
+		return &ValidationError{Name: "desired_phase", err: errors.New(`memory: missing required field "Task.desired_phase"`)}
+	}
+	if v, ok := tc.mutation.DesiredPhase(); ok {
+		if err := task.DesiredPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "desired_phase", err: fmt.Errorf(`memory: validator failed for field "Task.desired_phase": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -348,6 +375,10 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.ToolUses(); ok {
 		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
 		_node.ToolUses = value
+	}
+	if value, ok := tc.mutation.DesiredPhase(); ok {
+		_spec.SetField(task.FieldDesiredPhase, field.TypeEnum, value)
+		_node.DesiredPhase = value
 	}
 	if nodes := tc.mutation.MessagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

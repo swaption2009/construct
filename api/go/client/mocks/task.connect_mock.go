@@ -117,6 +117,21 @@ func (mr *MockTaskServiceClientMockRecorder) Subscribe(arg0, arg1 any) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockTaskServiceClient)(nil).Subscribe), arg0, arg1)
 }
 
+// SuspendTask mocks base method.
+func (m *MockTaskServiceClient) SuspendTask(arg0 context.Context, arg1 *connect.Request[v1.SuspendTaskRequest]) (*connect.Response[v1.SuspendTaskResponse], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SuspendTask", arg0, arg1)
+	ret0, _ := ret[0].(*connect.Response[v1.SuspendTaskResponse])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SuspendTask indicates an expected call of SuspendTask.
+func (mr *MockTaskServiceClientMockRecorder) SuspendTask(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuspendTask", reflect.TypeOf((*MockTaskServiceClient)(nil).SuspendTask), arg0, arg1)
+}
+
 // UpdateTask mocks base method.
 func (m *MockTaskServiceClient) UpdateTask(arg0 context.Context, arg1 *connect.Request[v1.UpdateTaskRequest]) (*connect.Response[v1.UpdateTaskResponse], error) {
 	m.ctrl.T.Helper()
@@ -228,6 +243,21 @@ func (m *MockTaskServiceHandler) Subscribe(arg0 context.Context, arg1 *connect.R
 func (mr *MockTaskServiceHandlerMockRecorder) Subscribe(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockTaskServiceHandler)(nil).Subscribe), arg0, arg1, arg2)
+}
+
+// SuspendTask mocks base method.
+func (m *MockTaskServiceHandler) SuspendTask(arg0 context.Context, arg1 *connect.Request[v1.SuspendTaskRequest]) (*connect.Response[v1.SuspendTaskResponse], error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SuspendTask", arg0, arg1)
+	ret0, _ := ret[0].(*connect.Response[v1.SuspendTaskResponse])
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SuspendTask indicates an expected call of SuspendTask.
+func (mr *MockTaskServiceHandlerMockRecorder) SuspendTask(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuspendTask", reflect.TypeOf((*MockTaskServiceHandler)(nil).SuspendTask), arg0, arg1)
 }
 
 // UpdateTask mocks base method.

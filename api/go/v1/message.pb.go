@@ -417,6 +417,7 @@ type MessagePart struct {
 	//	*MessagePart_Text_
 	//	*MessagePart_ToolCall
 	//	*MessagePart_ToolResult
+	//	*MessagePart_Error_
 	Data          isMessagePart_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -486,6 +487,15 @@ func (x *MessagePart) GetToolResult() *ToolResult {
 	return nil
 }
 
+func (x *MessagePart) GetError() *MessagePart_Error {
+	if x != nil {
+		if x, ok := x.Data.(*MessagePart_Error_); ok {
+			return x.Error
+		}
+	}
+	return nil
+}
+
 type isMessagePart_Data interface {
 	isMessagePart_Data()
 }
@@ -504,11 +514,18 @@ type MessagePart_ToolResult struct {
 	ToolResult *ToolResult `protobuf:"bytes,3,opt,name=tool_result,json=toolResult,proto3,oneof"`
 }
 
+type MessagePart_Error_ struct {
+	// error contains the error message.
+	Error *MessagePart_Error `protobuf:"bytes,4,opt,name=error,proto3,oneof"`
+}
+
 func (*MessagePart_Text_) isMessagePart_Data() {}
 
 func (*MessagePart_ToolCall) isMessagePart_Data() {}
 
 func (*MessagePart_ToolResult) isMessagePart_Data() {}
+
+func (*MessagePart_Error_) isMessagePart_Data() {}
 
 // MessageUsage tracks resource consumption and associated costs for generating a message.
 type MessageUsage struct {
@@ -2098,6 +2115,50 @@ func (x *MessagePart_Text) GetContent() string {
 	return ""
 }
 
+type MessagePart_Error struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MessagePart_Error) Reset() {
+	*x = MessagePart_Error{}
+	mi := &file_construct_v1_message_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessagePart_Error) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessagePart_Error) ProtoMessage() {}
+
+func (x *MessagePart_Error) ProtoReflect() protoreflect.Message {
+	mi := &file_construct_v1_message_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessagePart_Error.ProtoReflect.Descriptor instead.
+func (*MessagePart_Error) Descriptor() ([]byte, []int) {
+	return file_construct_v1_message_proto_rawDescGZIP(), []int{4, 1}
+}
+
+func (x *MessagePart_Error) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 // Filter specifies criteria for narrowing the list of returned messages.
 type ListMessagesRequest_Filter struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2113,7 +2174,7 @@ type ListMessagesRequest_Filter struct {
 
 func (x *ListMessagesRequest_Filter) Reset() {
 	*x = ListMessagesRequest_Filter{}
-	mi := &file_construct_v1_message_proto_msgTypes[29]
+	mi := &file_construct_v1_message_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2125,7 +2186,7 @@ func (x *ListMessagesRequest_Filter) String() string {
 func (*ListMessagesRequest_Filter) ProtoMessage() {}
 
 func (x *ListMessagesRequest_Filter) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[29]
+	mi := &file_construct_v1_message_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2171,7 +2232,7 @@ type ToolCall_CodeInterpreterInput struct {
 
 func (x *ToolCall_CodeInterpreterInput) Reset() {
 	*x = ToolCall_CodeInterpreterInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[30]
+	mi := &file_construct_v1_message_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2183,7 +2244,7 @@ func (x *ToolCall_CodeInterpreterInput) String() string {
 func (*ToolCall_CodeInterpreterInput) ProtoMessage() {}
 
 func (x *ToolCall_CodeInterpreterInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[30]
+	mi := &file_construct_v1_message_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2216,7 +2277,7 @@ type ToolCall_CreateFileInput struct {
 
 func (x *ToolCall_CreateFileInput) Reset() {
 	*x = ToolCall_CreateFileInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[31]
+	mi := &file_construct_v1_message_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2228,7 +2289,7 @@ func (x *ToolCall_CreateFileInput) String() string {
 func (*ToolCall_CreateFileInput) ProtoMessage() {}
 
 func (x *ToolCall_CreateFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[31]
+	mi := &file_construct_v1_message_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2268,7 +2329,7 @@ type ToolCall_EditFileInput struct {
 
 func (x *ToolCall_EditFileInput) Reset() {
 	*x = ToolCall_EditFileInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[32]
+	mi := &file_construct_v1_message_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2280,7 +2341,7 @@ func (x *ToolCall_EditFileInput) String() string {
 func (*ToolCall_EditFileInput) ProtoMessage() {}
 
 func (x *ToolCall_EditFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[32]
+	mi := &file_construct_v1_message_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2319,7 +2380,7 @@ type ToolCall_ExecuteCommandInput struct {
 
 func (x *ToolCall_ExecuteCommandInput) Reset() {
 	*x = ToolCall_ExecuteCommandInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[33]
+	mi := &file_construct_v1_message_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2331,7 +2392,7 @@ func (x *ToolCall_ExecuteCommandInput) String() string {
 func (*ToolCall_ExecuteCommandInput) ProtoMessage() {}
 
 func (x *ToolCall_ExecuteCommandInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[33]
+	mi := &file_construct_v1_message_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2427,7 @@ type ToolCall_FindFileInput struct {
 
 func (x *ToolCall_FindFileInput) Reset() {
 	*x = ToolCall_FindFileInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[34]
+	mi := &file_construct_v1_message_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2378,7 +2439,7 @@ func (x *ToolCall_FindFileInput) String() string {
 func (*ToolCall_FindFileInput) ProtoMessage() {}
 
 func (x *ToolCall_FindFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[34]
+	mi := &file_construct_v1_message_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2436,7 +2497,7 @@ type ToolCall_GrepInput struct {
 
 func (x *ToolCall_GrepInput) Reset() {
 	*x = ToolCall_GrepInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[35]
+	mi := &file_construct_v1_message_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2448,7 +2509,7 @@ func (x *ToolCall_GrepInput) String() string {
 func (*ToolCall_GrepInput) ProtoMessage() {}
 
 func (x *ToolCall_GrepInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[35]
+	mi := &file_construct_v1_message_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2516,7 +2577,7 @@ type ToolCall_HandoffInput struct {
 
 func (x *ToolCall_HandoffInput) Reset() {
 	*x = ToolCall_HandoffInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[36]
+	mi := &file_construct_v1_message_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2528,7 +2589,7 @@ func (x *ToolCall_HandoffInput) String() string {
 func (*ToolCall_HandoffInput) ProtoMessage() {}
 
 func (x *ToolCall_HandoffInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[36]
+	mi := &file_construct_v1_message_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2568,7 +2629,7 @@ type ToolCall_AskUserInput struct {
 
 func (x *ToolCall_AskUserInput) Reset() {
 	*x = ToolCall_AskUserInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[37]
+	mi := &file_construct_v1_message_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2580,7 +2641,7 @@ func (x *ToolCall_AskUserInput) String() string {
 func (*ToolCall_AskUserInput) ProtoMessage() {}
 
 func (x *ToolCall_AskUserInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[37]
+	mi := &file_construct_v1_message_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2620,7 +2681,7 @@ type ToolCall_ListFilesInput struct {
 
 func (x *ToolCall_ListFilesInput) Reset() {
 	*x = ToolCall_ListFilesInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[38]
+	mi := &file_construct_v1_message_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2632,7 +2693,7 @@ func (x *ToolCall_ListFilesInput) String() string {
 func (*ToolCall_ListFilesInput) ProtoMessage() {}
 
 func (x *ToolCall_ListFilesInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[38]
+	mi := &file_construct_v1_message_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2671,7 +2732,7 @@ type ToolCall_ReadFileInput struct {
 
 func (x *ToolCall_ReadFileInput) Reset() {
 	*x = ToolCall_ReadFileInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[39]
+	mi := &file_construct_v1_message_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2683,7 +2744,7 @@ func (x *ToolCall_ReadFileInput) String() string {
 func (*ToolCall_ReadFileInput) ProtoMessage() {}
 
 func (x *ToolCall_ReadFileInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[39]
+	mi := &file_construct_v1_message_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2718,7 +2779,7 @@ type ToolCall_SubmitReportInput struct {
 
 func (x *ToolCall_SubmitReportInput) Reset() {
 	*x = ToolCall_SubmitReportInput{}
-	mi := &file_construct_v1_message_proto_msgTypes[40]
+	mi := &file_construct_v1_message_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2730,7 +2791,7 @@ func (x *ToolCall_SubmitReportInput) String() string {
 func (*ToolCall_SubmitReportInput) ProtoMessage() {}
 
 func (x *ToolCall_SubmitReportInput) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[40]
+	mi := &file_construct_v1_message_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2784,7 +2845,7 @@ type ToolCall_EditFileInput_DiffPair struct {
 
 func (x *ToolCall_EditFileInput_DiffPair) Reset() {
 	*x = ToolCall_EditFileInput_DiffPair{}
-	mi := &file_construct_v1_message_proto_msgTypes[41]
+	mi := &file_construct_v1_message_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2796,7 +2857,7 @@ func (x *ToolCall_EditFileInput_DiffPair) String() string {
 func (*ToolCall_EditFileInput_DiffPair) ProtoMessage() {}
 
 func (x *ToolCall_EditFileInput_DiffPair) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[41]
+	mi := &file_construct_v1_message_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2835,7 +2896,7 @@ type ToolResult_CodeInterpreterResult struct {
 
 func (x *ToolResult_CodeInterpreterResult) Reset() {
 	*x = ToolResult_CodeInterpreterResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[42]
+	mi := &file_construct_v1_message_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2847,7 +2908,7 @@ func (x *ToolResult_CodeInterpreterResult) String() string {
 func (*ToolResult_CodeInterpreterResult) ProtoMessage() {}
 
 func (x *ToolResult_CodeInterpreterResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[42]
+	mi := &file_construct_v1_message_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2879,7 +2940,7 @@ type ToolResult_CreateFileResult struct {
 
 func (x *ToolResult_CreateFileResult) Reset() {
 	*x = ToolResult_CreateFileResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[43]
+	mi := &file_construct_v1_message_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2891,7 +2952,7 @@ func (x *ToolResult_CreateFileResult) String() string {
 func (*ToolResult_CreateFileResult) ProtoMessage() {}
 
 func (x *ToolResult_CreateFileResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[43]
+	mi := &file_construct_v1_message_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2924,7 +2985,7 @@ type ToolResult_EditFileResult struct {
 
 func (x *ToolResult_EditFileResult) Reset() {
 	*x = ToolResult_EditFileResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[44]
+	mi := &file_construct_v1_message_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2936,7 +2997,7 @@ func (x *ToolResult_EditFileResult) String() string {
 func (*ToolResult_EditFileResult) ProtoMessage() {}
 
 func (x *ToolResult_EditFileResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[44]
+	mi := &file_construct_v1_message_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2978,7 +3039,7 @@ type ToolResult_ExecuteCommandResult struct {
 
 func (x *ToolResult_ExecuteCommandResult) Reset() {
 	*x = ToolResult_ExecuteCommandResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[45]
+	mi := &file_construct_v1_message_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2990,7 +3051,7 @@ func (x *ToolResult_ExecuteCommandResult) String() string {
 func (*ToolResult_ExecuteCommandResult) ProtoMessage() {}
 
 func (x *ToolResult_ExecuteCommandResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[45]
+	mi := &file_construct_v1_message_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3045,7 +3106,7 @@ type ToolResult_FindFileResult struct {
 
 func (x *ToolResult_FindFileResult) Reset() {
 	*x = ToolResult_FindFileResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[46]
+	mi := &file_construct_v1_message_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3057,7 +3118,7 @@ func (x *ToolResult_FindFileResult) String() string {
 func (*ToolResult_FindFileResult) ProtoMessage() {}
 
 func (x *ToolResult_FindFileResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[46]
+	mi := &file_construct_v1_message_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3105,7 +3166,7 @@ type ToolResult_GrepResult struct {
 
 func (x *ToolResult_GrepResult) Reset() {
 	*x = ToolResult_GrepResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[47]
+	mi := &file_construct_v1_message_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3117,7 +3178,7 @@ func (x *ToolResult_GrepResult) String() string {
 func (*ToolResult_GrepResult) ProtoMessage() {}
 
 func (x *ToolResult_GrepResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[47]
+	mi := &file_construct_v1_message_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3164,7 +3225,7 @@ type ToolResult_ListFilesResult struct {
 
 func (x *ToolResult_ListFilesResult) Reset() {
 	*x = ToolResult_ListFilesResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[48]
+	mi := &file_construct_v1_message_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3176,7 +3237,7 @@ func (x *ToolResult_ListFilesResult) String() string {
 func (*ToolResult_ListFilesResult) ProtoMessage() {}
 
 func (x *ToolResult_ListFilesResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[48]
+	mi := &file_construct_v1_message_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3216,7 +3277,7 @@ type ToolResult_ReadFileResult struct {
 
 func (x *ToolResult_ReadFileResult) Reset() {
 	*x = ToolResult_ReadFileResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[49]
+	mi := &file_construct_v1_message_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3228,7 +3289,7 @@ func (x *ToolResult_ReadFileResult) String() string {
 func (*ToolResult_ReadFileResult) ProtoMessage() {}
 
 func (x *ToolResult_ReadFileResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[49]
+	mi := &file_construct_v1_message_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3270,7 +3331,7 @@ type ToolResult_SubmitReportResult struct {
 
 func (x *ToolResult_SubmitReportResult) Reset() {
 	*x = ToolResult_SubmitReportResult{}
-	mi := &file_construct_v1_message_proto_msgTypes[50]
+	mi := &file_construct_v1_message_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3282,7 +3343,7 @@ func (x *ToolResult_SubmitReportResult) String() string {
 func (*ToolResult_SubmitReportResult) ProtoMessage() {}
 
 func (x *ToolResult_SubmitReportResult) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[50]
+	mi := &file_construct_v1_message_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3337,7 +3398,7 @@ type ToolResult_EditFileResult_PatchInfo struct {
 
 func (x *ToolResult_EditFileResult_PatchInfo) Reset() {
 	*x = ToolResult_EditFileResult_PatchInfo{}
-	mi := &file_construct_v1_message_proto_msgTypes[51]
+	mi := &file_construct_v1_message_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3349,7 +3410,7 @@ func (x *ToolResult_EditFileResult_PatchInfo) String() string {
 func (*ToolResult_EditFileResult_PatchInfo) ProtoMessage() {}
 
 func (x *ToolResult_EditFileResult_PatchInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[51]
+	mi := &file_construct_v1_message_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3396,7 +3457,7 @@ type ToolResult_GrepResult_ContextLine struct {
 
 func (x *ToolResult_GrepResult_ContextLine) Reset() {
 	*x = ToolResult_GrepResult_ContextLine{}
-	mi := &file_construct_v1_message_proto_msgTypes[52]
+	mi := &file_construct_v1_message_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3408,7 +3469,7 @@ func (x *ToolResult_GrepResult_ContextLine) String() string {
 func (*ToolResult_GrepResult_ContextLine) ProtoMessage() {}
 
 func (x *ToolResult_GrepResult_ContextLine) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[52]
+	mi := &file_construct_v1_message_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3450,7 +3511,7 @@ type ToolResult_GrepResult_GrepMatch struct {
 
 func (x *ToolResult_GrepResult_GrepMatch) Reset() {
 	*x = ToolResult_GrepResult_GrepMatch{}
-	mi := &file_construct_v1_message_proto_msgTypes[53]
+	mi := &file_construct_v1_message_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3462,7 +3523,7 @@ func (x *ToolResult_GrepResult_GrepMatch) String() string {
 func (*ToolResult_GrepResult_GrepMatch) ProtoMessage() {}
 
 func (x *ToolResult_GrepResult_GrepMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[53]
+	mi := &file_construct_v1_message_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3517,7 +3578,7 @@ type ToolResult_ListFilesResult_DirectoryEntry struct {
 
 func (x *ToolResult_ListFilesResult_DirectoryEntry) Reset() {
 	*x = ToolResult_ListFilesResult_DirectoryEntry{}
-	mi := &file_construct_v1_message_proto_msgTypes[54]
+	mi := &file_construct_v1_message_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3529,7 +3590,7 @@ func (x *ToolResult_ListFilesResult_DirectoryEntry) String() string {
 func (*ToolResult_ListFilesResult_DirectoryEntry) ProtoMessage() {}
 
 func (x *ToolResult_ListFilesResult_DirectoryEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[54]
+	mi := &file_construct_v1_message_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3576,7 +3637,7 @@ type CreateFileToolResult_Input struct {
 
 func (x *CreateFileToolResult_Input) Reset() {
 	*x = CreateFileToolResult_Input{}
-	mi := &file_construct_v1_message_proto_msgTypes[55]
+	mi := &file_construct_v1_message_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3588,7 +3649,7 @@ func (x *CreateFileToolResult_Input) String() string {
 func (*CreateFileToolResult_Input) ProtoMessage() {}
 
 func (x *CreateFileToolResult_Input) ProtoReflect() protoreflect.Message {
-	mi := &file_construct_v1_message_proto_msgTypes[55]
+	mi := &file_construct_v1_message_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3644,14 +3705,17 @@ const file_construct_v1_message_proto_rawDesc = "" +
 	"\rMessageStatus\x120\n" +
 	"\x05usage\x18\x01 \x01(\v2\x1a.construct.v1.MessageUsageR\x05usage\x12@\n" +
 	"\rcontent_state\x18\x02 \x01(\x0e2\x1b.construct.v1.ContentStatusR\fcontentState\x12*\n" +
-	"\x11is_final_response\x18\x03 \x01(\bR\x0fisFinalResponse\"\xee\x01\n" +
+	"\x11is_final_response\x18\x03 \x01(\bR\x0fisFinalResponse\"\xca\x02\n" +
 	"\vMessagePart\x124\n" +
 	"\x04text\x18\x01 \x01(\v2\x1e.construct.v1.MessagePart.TextH\x00R\x04text\x125\n" +
 	"\ttool_call\x18\x02 \x01(\v2\x16.construct.v1.ToolCallH\x00R\btoolCall\x12;\n" +
 	"\vtool_result\x18\x03 \x01(\v2\x18.construct.v1.ToolResultH\x00R\n" +
-	"toolResult\x1a-\n" +
+	"toolResult\x127\n" +
+	"\x05error\x18\x04 \x01(\v2\x1f.construct.v1.MessagePart.ErrorH\x00R\x05error\x1a-\n" +
 	"\x04Text\x12%\n" +
-	"\acontent\x18\x01 \x01(\tB\v\xbaH\br\x06\x10\x01\x18\x80\x80\x04R\acontentB\x06\n" +
+	"\acontent\x18\x01 \x01(\tB\v\xbaH\br\x06\x10\x01\x18\x80\x80\x04R\acontent\x1a!\n" +
+	"\x05Error\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessageB\x06\n" +
 	"\x04data\"\xc4\x01\n" +
 	"\fMessageUsage\x12!\n" +
 	"\finput_tokens\x18\x01 \x01(\x03R\vinputTokens\x12#\n" +
@@ -3902,7 +3966,7 @@ func file_construct_v1_message_proto_rawDescGZIP() []byte {
 }
 
 var file_construct_v1_message_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_construct_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_construct_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_construct_v1_message_proto_goTypes = []any{
 	(ContentStatus)(0),                                // 0: construct.v1.ContentStatus
 	(MessageRole)(0),                                  // 1: construct.v1.MessageRole
@@ -3935,44 +3999,45 @@ var file_construct_v1_message_proto_goTypes = []any{
 	(*SubmitReport)(nil),                              // 28: construct.v1.SubmitReport
 	(*ToolError)(nil),                                 // 29: construct.v1.ToolError
 	(*MessagePart_Text)(nil),                          // 30: construct.v1.MessagePart.Text
-	(*ListMessagesRequest_Filter)(nil),                // 31: construct.v1.ListMessagesRequest.Filter
-	(*ToolCall_CodeInterpreterInput)(nil),             // 32: construct.v1.ToolCall.CodeInterpreterInput
-	(*ToolCall_CreateFileInput)(nil),                  // 33: construct.v1.ToolCall.CreateFileInput
-	(*ToolCall_EditFileInput)(nil),                    // 34: construct.v1.ToolCall.EditFileInput
-	(*ToolCall_ExecuteCommandInput)(nil),              // 35: construct.v1.ToolCall.ExecuteCommandInput
-	(*ToolCall_FindFileInput)(nil),                    // 36: construct.v1.ToolCall.FindFileInput
-	(*ToolCall_GrepInput)(nil),                        // 37: construct.v1.ToolCall.GrepInput
-	(*ToolCall_HandoffInput)(nil),                     // 38: construct.v1.ToolCall.HandoffInput
-	(*ToolCall_AskUserInput)(nil),                     // 39: construct.v1.ToolCall.AskUserInput
-	(*ToolCall_ListFilesInput)(nil),                   // 40: construct.v1.ToolCall.ListFilesInput
-	(*ToolCall_ReadFileInput)(nil),                    // 41: construct.v1.ToolCall.ReadFileInput
-	(*ToolCall_SubmitReportInput)(nil),                // 42: construct.v1.ToolCall.SubmitReportInput
-	(*ToolCall_EditFileInput_DiffPair)(nil),           // 43: construct.v1.ToolCall.EditFileInput.DiffPair
-	(*ToolResult_CodeInterpreterResult)(nil),          // 44: construct.v1.ToolResult.CodeInterpreterResult
-	(*ToolResult_CreateFileResult)(nil),               // 45: construct.v1.ToolResult.CreateFileResult
-	(*ToolResult_EditFileResult)(nil),                 // 46: construct.v1.ToolResult.EditFileResult
-	(*ToolResult_ExecuteCommandResult)(nil),           // 47: construct.v1.ToolResult.ExecuteCommandResult
-	(*ToolResult_FindFileResult)(nil),                 // 48: construct.v1.ToolResult.FindFileResult
-	(*ToolResult_GrepResult)(nil),                     // 49: construct.v1.ToolResult.GrepResult
-	(*ToolResult_ListFilesResult)(nil),                // 50: construct.v1.ToolResult.ListFilesResult
-	(*ToolResult_ReadFileResult)(nil),                 // 51: construct.v1.ToolResult.ReadFileResult
-	(*ToolResult_SubmitReportResult)(nil),             // 52: construct.v1.ToolResult.SubmitReportResult
-	(*ToolResult_EditFileResult_PatchInfo)(nil),       // 53: construct.v1.ToolResult.EditFileResult.PatchInfo
-	(*ToolResult_GrepResult_ContextLine)(nil),         // 54: construct.v1.ToolResult.GrepResult.ContextLine
-	(*ToolResult_GrepResult_GrepMatch)(nil),           // 55: construct.v1.ToolResult.GrepResult.GrepMatch
-	(*ToolResult_ListFilesResult_DirectoryEntry)(nil), // 56: construct.v1.ToolResult.ListFilesResult.DirectoryEntry
-	(*CreateFileToolResult_Input)(nil),                // 57: construct.v1.CreateFileToolResult.Input
-	nil,                                               // 58: construct.v1.ToolError.DetailsEntry
-	(*timestamppb.Timestamp)(nil),                     // 59: google.protobuf.Timestamp
-	(SortField)(0),                                    // 60: construct.v1.SortField
-	(SortOrder)(0),                                    // 61: construct.v1.SortOrder
+	(*MessagePart_Error)(nil),                         // 31: construct.v1.MessagePart.Error
+	(*ListMessagesRequest_Filter)(nil),                // 32: construct.v1.ListMessagesRequest.Filter
+	(*ToolCall_CodeInterpreterInput)(nil),             // 33: construct.v1.ToolCall.CodeInterpreterInput
+	(*ToolCall_CreateFileInput)(nil),                  // 34: construct.v1.ToolCall.CreateFileInput
+	(*ToolCall_EditFileInput)(nil),                    // 35: construct.v1.ToolCall.EditFileInput
+	(*ToolCall_ExecuteCommandInput)(nil),              // 36: construct.v1.ToolCall.ExecuteCommandInput
+	(*ToolCall_FindFileInput)(nil),                    // 37: construct.v1.ToolCall.FindFileInput
+	(*ToolCall_GrepInput)(nil),                        // 38: construct.v1.ToolCall.GrepInput
+	(*ToolCall_HandoffInput)(nil),                     // 39: construct.v1.ToolCall.HandoffInput
+	(*ToolCall_AskUserInput)(nil),                     // 40: construct.v1.ToolCall.AskUserInput
+	(*ToolCall_ListFilesInput)(nil),                   // 41: construct.v1.ToolCall.ListFilesInput
+	(*ToolCall_ReadFileInput)(nil),                    // 42: construct.v1.ToolCall.ReadFileInput
+	(*ToolCall_SubmitReportInput)(nil),                // 43: construct.v1.ToolCall.SubmitReportInput
+	(*ToolCall_EditFileInput_DiffPair)(nil),           // 44: construct.v1.ToolCall.EditFileInput.DiffPair
+	(*ToolResult_CodeInterpreterResult)(nil),          // 45: construct.v1.ToolResult.CodeInterpreterResult
+	(*ToolResult_CreateFileResult)(nil),               // 46: construct.v1.ToolResult.CreateFileResult
+	(*ToolResult_EditFileResult)(nil),                 // 47: construct.v1.ToolResult.EditFileResult
+	(*ToolResult_ExecuteCommandResult)(nil),           // 48: construct.v1.ToolResult.ExecuteCommandResult
+	(*ToolResult_FindFileResult)(nil),                 // 49: construct.v1.ToolResult.FindFileResult
+	(*ToolResult_GrepResult)(nil),                     // 50: construct.v1.ToolResult.GrepResult
+	(*ToolResult_ListFilesResult)(nil),                // 51: construct.v1.ToolResult.ListFilesResult
+	(*ToolResult_ReadFileResult)(nil),                 // 52: construct.v1.ToolResult.ReadFileResult
+	(*ToolResult_SubmitReportResult)(nil),             // 53: construct.v1.ToolResult.SubmitReportResult
+	(*ToolResult_EditFileResult_PatchInfo)(nil),       // 54: construct.v1.ToolResult.EditFileResult.PatchInfo
+	(*ToolResult_GrepResult_ContextLine)(nil),         // 55: construct.v1.ToolResult.GrepResult.ContextLine
+	(*ToolResult_GrepResult_GrepMatch)(nil),           // 56: construct.v1.ToolResult.GrepResult.GrepMatch
+	(*ToolResult_ListFilesResult_DirectoryEntry)(nil), // 57: construct.v1.ToolResult.ListFilesResult.DirectoryEntry
+	(*CreateFileToolResult_Input)(nil),                // 58: construct.v1.CreateFileToolResult.Input
+	nil,                                               // 59: construct.v1.ToolError.DetailsEntry
+	(*timestamppb.Timestamp)(nil),                     // 60: google.protobuf.Timestamp
+	(SortField)(0),                                    // 61: construct.v1.SortField
+	(SortOrder)(0),                                    // 62: construct.v1.SortOrder
 }
 var file_construct_v1_message_proto_depIdxs = []int32{
 	3,  // 0: construct.v1.Message.metadata:type_name -> construct.v1.MessageMetadata
 	4,  // 1: construct.v1.Message.spec:type_name -> construct.v1.MessageSpec
 	5,  // 2: construct.v1.Message.status:type_name -> construct.v1.MessageStatus
-	59, // 3: construct.v1.MessageMetadata.created_at:type_name -> google.protobuf.Timestamp
-	59, // 4: construct.v1.MessageMetadata.updated_at:type_name -> google.protobuf.Timestamp
+	60, // 3: construct.v1.MessageMetadata.created_at:type_name -> google.protobuf.Timestamp
+	60, // 4: construct.v1.MessageMetadata.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 5: construct.v1.MessageMetadata.role:type_name -> construct.v1.MessageRole
 	6,  // 6: construct.v1.MessageSpec.content:type_name -> construct.v1.MessagePart
 	7,  // 7: construct.v1.MessageStatus.usage:type_name -> construct.v1.MessageUsage
@@ -3980,59 +4045,60 @@ var file_construct_v1_message_proto_depIdxs = []int32{
 	30, // 9: construct.v1.MessagePart.text:type_name -> construct.v1.MessagePart.Text
 	18, // 10: construct.v1.MessagePart.tool_call:type_name -> construct.v1.ToolCall
 	19, // 11: construct.v1.MessagePart.tool_result:type_name -> construct.v1.ToolResult
-	6,  // 12: construct.v1.CreateMessageRequest.content:type_name -> construct.v1.MessagePart
-	2,  // 13: construct.v1.CreateMessageResponse.message:type_name -> construct.v1.Message
-	2,  // 14: construct.v1.GetMessageResponse.message:type_name -> construct.v1.Message
-	31, // 15: construct.v1.ListMessagesRequest.filter:type_name -> construct.v1.ListMessagesRequest.Filter
-	60, // 16: construct.v1.ListMessagesRequest.sort_field:type_name -> construct.v1.SortField
-	61, // 17: construct.v1.ListMessagesRequest.sort_order:type_name -> construct.v1.SortOrder
-	2,  // 18: construct.v1.ListMessagesResponse.messages:type_name -> construct.v1.Message
-	6,  // 19: construct.v1.UpdateMessageRequest.content:type_name -> construct.v1.MessagePart
-	2,  // 20: construct.v1.UpdateMessageResponse.message:type_name -> construct.v1.Message
-	33, // 21: construct.v1.ToolCall.create_file:type_name -> construct.v1.ToolCall.CreateFileInput
-	34, // 22: construct.v1.ToolCall.edit_file:type_name -> construct.v1.ToolCall.EditFileInput
-	35, // 23: construct.v1.ToolCall.execute_command:type_name -> construct.v1.ToolCall.ExecuteCommandInput
-	36, // 24: construct.v1.ToolCall.find_file:type_name -> construct.v1.ToolCall.FindFileInput
-	37, // 25: construct.v1.ToolCall.grep:type_name -> construct.v1.ToolCall.GrepInput
-	38, // 26: construct.v1.ToolCall.handoff:type_name -> construct.v1.ToolCall.HandoffInput
-	39, // 27: construct.v1.ToolCall.ask_user:type_name -> construct.v1.ToolCall.AskUserInput
-	40, // 28: construct.v1.ToolCall.list_files:type_name -> construct.v1.ToolCall.ListFilesInput
-	41, // 29: construct.v1.ToolCall.read_file:type_name -> construct.v1.ToolCall.ReadFileInput
-	42, // 30: construct.v1.ToolCall.submit_report:type_name -> construct.v1.ToolCall.SubmitReportInput
-	32, // 31: construct.v1.ToolCall.code_interpreter:type_name -> construct.v1.ToolCall.CodeInterpreterInput
-	45, // 32: construct.v1.ToolResult.create_file:type_name -> construct.v1.ToolResult.CreateFileResult
-	46, // 33: construct.v1.ToolResult.edit_file:type_name -> construct.v1.ToolResult.EditFileResult
-	47, // 34: construct.v1.ToolResult.execute_command:type_name -> construct.v1.ToolResult.ExecuteCommandResult
-	48, // 35: construct.v1.ToolResult.find_file:type_name -> construct.v1.ToolResult.FindFileResult
-	49, // 36: construct.v1.ToolResult.grep:type_name -> construct.v1.ToolResult.GrepResult
-	50, // 37: construct.v1.ToolResult.list_files:type_name -> construct.v1.ToolResult.ListFilesResult
-	51, // 38: construct.v1.ToolResult.read_file:type_name -> construct.v1.ToolResult.ReadFileResult
-	52, // 39: construct.v1.ToolResult.submit_report:type_name -> construct.v1.ToolResult.SubmitReportResult
-	44, // 40: construct.v1.ToolResult.code_interpreter:type_name -> construct.v1.ToolResult.CodeInterpreterResult
-	29, // 41: construct.v1.ToolResult.error:type_name -> construct.v1.ToolError
-	57, // 42: construct.v1.CreateFileToolResult.input:type_name -> construct.v1.CreateFileToolResult.Input
-	58, // 43: construct.v1.ToolError.details:type_name -> construct.v1.ToolError.DetailsEntry
-	1,  // 44: construct.v1.ListMessagesRequest.Filter.roles:type_name -> construct.v1.MessageRole
-	43, // 45: construct.v1.ToolCall.EditFileInput.diffs:type_name -> construct.v1.ToolCall.EditFileInput.DiffPair
-	53, // 46: construct.v1.ToolResult.EditFileResult.patch_info:type_name -> construct.v1.ToolResult.EditFileResult.PatchInfo
-	55, // 47: construct.v1.ToolResult.GrepResult.matches:type_name -> construct.v1.ToolResult.GrepResult.GrepMatch
-	56, // 48: construct.v1.ToolResult.ListFilesResult.entries:type_name -> construct.v1.ToolResult.ListFilesResult.DirectoryEntry
-	54, // 49: construct.v1.ToolResult.GrepResult.GrepMatch.context:type_name -> construct.v1.ToolResult.GrepResult.ContextLine
-	8,  // 50: construct.v1.MessageService.CreateMessage:input_type -> construct.v1.CreateMessageRequest
-	10, // 51: construct.v1.MessageService.GetMessage:input_type -> construct.v1.GetMessageRequest
-	12, // 52: construct.v1.MessageService.ListMessages:input_type -> construct.v1.ListMessagesRequest
-	14, // 53: construct.v1.MessageService.UpdateMessage:input_type -> construct.v1.UpdateMessageRequest
-	16, // 54: construct.v1.MessageService.DeleteMessage:input_type -> construct.v1.DeleteMessageRequest
-	9,  // 55: construct.v1.MessageService.CreateMessage:output_type -> construct.v1.CreateMessageResponse
-	11, // 56: construct.v1.MessageService.GetMessage:output_type -> construct.v1.GetMessageResponse
-	13, // 57: construct.v1.MessageService.ListMessages:output_type -> construct.v1.ListMessagesResponse
-	15, // 58: construct.v1.MessageService.UpdateMessage:output_type -> construct.v1.UpdateMessageResponse
-	17, // 59: construct.v1.MessageService.DeleteMessage:output_type -> construct.v1.DeleteMessageResponse
-	55, // [55:60] is the sub-list for method output_type
-	50, // [50:55] is the sub-list for method input_type
-	50, // [50:50] is the sub-list for extension type_name
-	50, // [50:50] is the sub-list for extension extendee
-	0,  // [0:50] is the sub-list for field type_name
+	31, // 12: construct.v1.MessagePart.error:type_name -> construct.v1.MessagePart.Error
+	6,  // 13: construct.v1.CreateMessageRequest.content:type_name -> construct.v1.MessagePart
+	2,  // 14: construct.v1.CreateMessageResponse.message:type_name -> construct.v1.Message
+	2,  // 15: construct.v1.GetMessageResponse.message:type_name -> construct.v1.Message
+	32, // 16: construct.v1.ListMessagesRequest.filter:type_name -> construct.v1.ListMessagesRequest.Filter
+	61, // 17: construct.v1.ListMessagesRequest.sort_field:type_name -> construct.v1.SortField
+	62, // 18: construct.v1.ListMessagesRequest.sort_order:type_name -> construct.v1.SortOrder
+	2,  // 19: construct.v1.ListMessagesResponse.messages:type_name -> construct.v1.Message
+	6,  // 20: construct.v1.UpdateMessageRequest.content:type_name -> construct.v1.MessagePart
+	2,  // 21: construct.v1.UpdateMessageResponse.message:type_name -> construct.v1.Message
+	34, // 22: construct.v1.ToolCall.create_file:type_name -> construct.v1.ToolCall.CreateFileInput
+	35, // 23: construct.v1.ToolCall.edit_file:type_name -> construct.v1.ToolCall.EditFileInput
+	36, // 24: construct.v1.ToolCall.execute_command:type_name -> construct.v1.ToolCall.ExecuteCommandInput
+	37, // 25: construct.v1.ToolCall.find_file:type_name -> construct.v1.ToolCall.FindFileInput
+	38, // 26: construct.v1.ToolCall.grep:type_name -> construct.v1.ToolCall.GrepInput
+	39, // 27: construct.v1.ToolCall.handoff:type_name -> construct.v1.ToolCall.HandoffInput
+	40, // 28: construct.v1.ToolCall.ask_user:type_name -> construct.v1.ToolCall.AskUserInput
+	41, // 29: construct.v1.ToolCall.list_files:type_name -> construct.v1.ToolCall.ListFilesInput
+	42, // 30: construct.v1.ToolCall.read_file:type_name -> construct.v1.ToolCall.ReadFileInput
+	43, // 31: construct.v1.ToolCall.submit_report:type_name -> construct.v1.ToolCall.SubmitReportInput
+	33, // 32: construct.v1.ToolCall.code_interpreter:type_name -> construct.v1.ToolCall.CodeInterpreterInput
+	46, // 33: construct.v1.ToolResult.create_file:type_name -> construct.v1.ToolResult.CreateFileResult
+	47, // 34: construct.v1.ToolResult.edit_file:type_name -> construct.v1.ToolResult.EditFileResult
+	48, // 35: construct.v1.ToolResult.execute_command:type_name -> construct.v1.ToolResult.ExecuteCommandResult
+	49, // 36: construct.v1.ToolResult.find_file:type_name -> construct.v1.ToolResult.FindFileResult
+	50, // 37: construct.v1.ToolResult.grep:type_name -> construct.v1.ToolResult.GrepResult
+	51, // 38: construct.v1.ToolResult.list_files:type_name -> construct.v1.ToolResult.ListFilesResult
+	52, // 39: construct.v1.ToolResult.read_file:type_name -> construct.v1.ToolResult.ReadFileResult
+	53, // 40: construct.v1.ToolResult.submit_report:type_name -> construct.v1.ToolResult.SubmitReportResult
+	45, // 41: construct.v1.ToolResult.code_interpreter:type_name -> construct.v1.ToolResult.CodeInterpreterResult
+	29, // 42: construct.v1.ToolResult.error:type_name -> construct.v1.ToolError
+	58, // 43: construct.v1.CreateFileToolResult.input:type_name -> construct.v1.CreateFileToolResult.Input
+	59, // 44: construct.v1.ToolError.details:type_name -> construct.v1.ToolError.DetailsEntry
+	1,  // 45: construct.v1.ListMessagesRequest.Filter.roles:type_name -> construct.v1.MessageRole
+	44, // 46: construct.v1.ToolCall.EditFileInput.diffs:type_name -> construct.v1.ToolCall.EditFileInput.DiffPair
+	54, // 47: construct.v1.ToolResult.EditFileResult.patch_info:type_name -> construct.v1.ToolResult.EditFileResult.PatchInfo
+	56, // 48: construct.v1.ToolResult.GrepResult.matches:type_name -> construct.v1.ToolResult.GrepResult.GrepMatch
+	57, // 49: construct.v1.ToolResult.ListFilesResult.entries:type_name -> construct.v1.ToolResult.ListFilesResult.DirectoryEntry
+	55, // 50: construct.v1.ToolResult.GrepResult.GrepMatch.context:type_name -> construct.v1.ToolResult.GrepResult.ContextLine
+	8,  // 51: construct.v1.MessageService.CreateMessage:input_type -> construct.v1.CreateMessageRequest
+	10, // 52: construct.v1.MessageService.GetMessage:input_type -> construct.v1.GetMessageRequest
+	12, // 53: construct.v1.MessageService.ListMessages:input_type -> construct.v1.ListMessagesRequest
+	14, // 54: construct.v1.MessageService.UpdateMessage:input_type -> construct.v1.UpdateMessageRequest
+	16, // 55: construct.v1.MessageService.DeleteMessage:input_type -> construct.v1.DeleteMessageRequest
+	9,  // 56: construct.v1.MessageService.CreateMessage:output_type -> construct.v1.CreateMessageResponse
+	11, // 57: construct.v1.MessageService.GetMessage:output_type -> construct.v1.GetMessageResponse
+	13, // 58: construct.v1.MessageService.ListMessages:output_type -> construct.v1.ListMessagesResponse
+	15, // 59: construct.v1.MessageService.UpdateMessage:output_type -> construct.v1.UpdateMessageResponse
+	17, // 60: construct.v1.MessageService.DeleteMessage:output_type -> construct.v1.DeleteMessageResponse
+	56, // [56:61] is the sub-list for method output_type
+	51, // [51:56] is the sub-list for method input_type
+	51, // [51:51] is the sub-list for extension type_name
+	51, // [51:51] is the sub-list for extension extendee
+	0,  // [0:51] is the sub-list for field type_name
 }
 
 func init() { file_construct_v1_message_proto_init() }
@@ -4046,6 +4112,7 @@ func file_construct_v1_message_proto_init() {
 		(*MessagePart_Text_)(nil),
 		(*MessagePart_ToolCall)(nil),
 		(*MessagePart_ToolResult)(nil),
+		(*MessagePart_Error_)(nil),
 	}
 	file_construct_v1_message_proto_msgTypes[10].OneofWrappers = []any{}
 	file_construct_v1_message_proto_msgTypes[16].OneofWrappers = []any{
@@ -4072,14 +4139,14 @@ func file_construct_v1_message_proto_init() {
 		(*ToolResult_SubmitReport)(nil),
 		(*ToolResult_CodeInterpreter)(nil),
 	}
-	file_construct_v1_message_proto_msgTypes[29].OneofWrappers = []any{}
+	file_construct_v1_message_proto_msgTypes[30].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_construct_v1_message_proto_rawDesc), len(file_construct_v1_message_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   57,
+			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

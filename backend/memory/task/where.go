@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/furisto/construct/backend/memory/predicate"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/google/uuid"
 )
 
@@ -549,6 +550,36 @@ func TurnsLT(v int64) predicate.Task {
 // TurnsLTE applies the LTE predicate on the "turns" field.
 func TurnsLTE(v int64) predicate.Task {
 	return predicate.Task(sql.FieldLTE(FieldTurns, v))
+}
+
+// DesiredPhaseEQ applies the EQ predicate on the "desired_phase" field.
+func DesiredPhaseEQ(v types.TaskPhase) predicate.Task {
+	vc := v
+	return predicate.Task(sql.FieldEQ(FieldDesiredPhase, vc))
+}
+
+// DesiredPhaseNEQ applies the NEQ predicate on the "desired_phase" field.
+func DesiredPhaseNEQ(v types.TaskPhase) predicate.Task {
+	vc := v
+	return predicate.Task(sql.FieldNEQ(FieldDesiredPhase, vc))
+}
+
+// DesiredPhaseIn applies the In predicate on the "desired_phase" field.
+func DesiredPhaseIn(vs ...types.TaskPhase) predicate.Task {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Task(sql.FieldIn(FieldDesiredPhase, v...))
+}
+
+// DesiredPhaseNotIn applies the NotIn predicate on the "desired_phase" field.
+func DesiredPhaseNotIn(vs ...types.TaskPhase) predicate.Task {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Task(sql.FieldNotIn(FieldDesiredPhase, v...))
 }
 
 // AgentIDEQ applies the EQ predicate on the "agent_id" field.

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/furisto/construct/backend/memory/agent"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/furisto/construct/backend/memory/task"
 	"github.com/google/uuid"
 )
@@ -40,6 +41,8 @@ type Task struct {
 	Turns int64 `json:"turns,omitempty"`
 	// ToolUses holds the value of the "tool_uses" field.
 	ToolUses map[string]int64 `json:"tool_uses,omitempty"`
+	// DesiredPhase holds the value of the "desired_phase" field.
+	DesiredPhase types.TaskPhase `json:"desired_phase,omitempty"`
 	// AgentID holds the value of the "agent_id" field.
 	AgentID uuid.UUID `json:"agent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -90,7 +93,7 @@ func (*Task) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case task.FieldInputTokens, task.FieldOutputTokens, task.FieldCacheWriteTokens, task.FieldCacheReadTokens, task.FieldTurns:
 			values[i] = new(sql.NullInt64)
-		case task.FieldProjectDirectory:
+		case task.FieldProjectDirectory, task.FieldDesiredPhase:
 			values[i] = new(sql.NullString)
 		case task.FieldCreateTime, task.FieldUpdateTime:
 			values[i] = new(sql.NullTime)
@@ -179,6 +182,12 @@ func (t *Task) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field tool_uses: %w", err)
 				}
 			}
+		case task.FieldDesiredPhase:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field desired_phase", values[i])
+			} else if value.Valid {
+				t.DesiredPhase = types.TaskPhase(value.String)
+			}
 		case task.FieldAgentID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field agent_id", values[i])
@@ -260,6 +269,9 @@ func (t *Task) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("tool_uses=")
 	builder.WriteString(fmt.Sprintf("%v", t.ToolUses))
+	builder.WriteString(", ")
+	builder.WriteString("desired_phase=")
+	builder.WriteString(fmt.Sprintf("%v", t.DesiredPhase))
 	builder.WriteString(", ")
 	builder.WriteString("agent_id=")
 	builder.WriteString(fmt.Sprintf("%v", t.AgentID))

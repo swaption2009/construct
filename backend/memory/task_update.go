@@ -14,6 +14,7 @@ import (
 	"github.com/furisto/construct/backend/memory/agent"
 	"github.com/furisto/construct/backend/memory/message"
 	"github.com/furisto/construct/backend/memory/predicate"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/furisto/construct/backend/memory/task"
 	"github.com/google/uuid"
 )
@@ -219,6 +220,20 @@ func (tu *TaskUpdate) SetToolUses(m map[string]int64) *TaskUpdate {
 	return tu
 }
 
+// SetDesiredPhase sets the "desired_phase" field.
+func (tu *TaskUpdate) SetDesiredPhase(tp types.TaskPhase) *TaskUpdate {
+	tu.mutation.SetDesiredPhase(tp)
+	return tu
+}
+
+// SetNillableDesiredPhase sets the "desired_phase" field if the given value is not nil.
+func (tu *TaskUpdate) SetNillableDesiredPhase(tp *types.TaskPhase) *TaskUpdate {
+	if tp != nil {
+		tu.SetDesiredPhase(*tp)
+	}
+	return tu
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tu *TaskUpdate) SetAgentID(u uuid.UUID) *TaskUpdate {
 	tu.mutation.SetAgentID(u)
@@ -327,7 +342,20 @@ func (tu *TaskUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tu *TaskUpdate) check() error {
+	if v, ok := tu.mutation.DesiredPhase(); ok {
+		if err := task.DesiredPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "desired_phase", err: fmt.Errorf(`memory: validator failed for field "Task.desired_phase": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := tu.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	if ps := tu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -398,6 +426,9 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := tu.mutation.ToolUses(); ok {
 		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
+	}
+	if value, ok := tu.mutation.DesiredPhase(); ok {
+		_spec.SetField(task.FieldDesiredPhase, field.TypeEnum, value)
 	}
 	if tu.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -681,6 +712,20 @@ func (tuo *TaskUpdateOne) SetToolUses(m map[string]int64) *TaskUpdateOne {
 	return tuo
 }
 
+// SetDesiredPhase sets the "desired_phase" field.
+func (tuo *TaskUpdateOne) SetDesiredPhase(tp types.TaskPhase) *TaskUpdateOne {
+	tuo.mutation.SetDesiredPhase(tp)
+	return tuo
+}
+
+// SetNillableDesiredPhase sets the "desired_phase" field if the given value is not nil.
+func (tuo *TaskUpdateOne) SetNillableDesiredPhase(tp *types.TaskPhase) *TaskUpdateOne {
+	if tp != nil {
+		tuo.SetDesiredPhase(*tp)
+	}
+	return tuo
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tuo *TaskUpdateOne) SetAgentID(u uuid.UUID) *TaskUpdateOne {
 	tuo.mutation.SetAgentID(u)
@@ -802,7 +847,20 @@ func (tuo *TaskUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (tuo *TaskUpdateOne) check() error {
+	if v, ok := tuo.mutation.DesiredPhase(); ok {
+		if err := task.DesiredPhaseValidator(v); err != nil {
+			return &ValidationError{Name: "desired_phase", err: fmt.Errorf(`memory: validator failed for field "Task.desired_phase": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) {
+	if err := tuo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(task.Table, task.Columns, sqlgraph.NewFieldSpec(task.FieldID, field.TypeUUID))
 	id, ok := tuo.mutation.ID()
 	if !ok {
@@ -890,6 +948,9 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	}
 	if value, ok := tuo.mutation.ToolUses(); ok {
 		_spec.SetField(task.FieldToolUses, field.TypeJSON, value)
+	}
+	if value, ok := tuo.mutation.DesiredPhase(); ok {
+		_spec.SetField(task.FieldDesiredPhase, field.TypeEnum, value)
 	}
 	if tuo.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -119,6 +119,10 @@ message MessagePart {
     ];
   }
 
+  message Error {
+    string message = 1;
+  }
+
   // content holds the message payload in various formats.
   oneof data {
     // text contains plain text message content.
@@ -128,6 +132,9 @@ message MessagePart {
 
     // tool_result contains the result of a tool call.
     ToolResult tool_result = 3;
+
+    // error contains the error message.
+    Error error = 4;
   }
 }
 

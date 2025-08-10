@@ -5,6 +5,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/google/uuid"
 )
 
@@ -23,6 +24,7 @@ func (Task) Fields() []ent.Field {
 		field.Float("cost").Optional(),
 		field.Int64("turns").Default(0),
 		field.JSON("tool_uses", map[string]int64{}).Default(map[string]int64{}),
+		field.Enum("desired_phase").GoType(types.TaskPhase("")).Default(string(types.TaskPhaseUnspecified)),
 
 		field.UUID("agent_id", uuid.UUID{}).Optional(),
 	}

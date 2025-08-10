@@ -21,6 +21,7 @@ type AgentRuntime interface {
 	Encryption() *secret.Client
 	TriggerReconciliation(id uuid.UUID)
 	EventHub() *stream.EventHub
+	CancelTask(id uuid.UUID)
 }
 
 type Server struct {

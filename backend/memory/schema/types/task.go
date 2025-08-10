@@ -17,3 +17,21 @@ package types
 // 	CacheReadTokens  int64   `json:"cache_read_tokens,omitempty"`
 // 	Cost             float64 `json:"cost,omitempty"`
 // }
+
+type TaskPhase string
+
+const (
+	TaskPhaseUnspecified TaskPhase = "unspecified"
+	TaskPhaseRunning     TaskPhase = "running"
+	TaskPhaseAwaiting    TaskPhase = "awaiting"
+	TaskPhaseSuspended   TaskPhase = "suspended"
+)
+
+func (t TaskPhase) Values() []string {
+	return []string{
+		string(TaskPhaseUnspecified),
+		string(TaskPhaseRunning),
+		string(TaskPhaseAwaiting),
+		string(TaskPhaseSuspended),
+	}
+}

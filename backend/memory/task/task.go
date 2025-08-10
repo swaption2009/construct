@@ -3,10 +3,12 @@
 package task
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/furisto/construct/backend/memory/schema/types"
 	"github.com/google/uuid"
 )
 
@@ -35,6 +37,8 @@ const (
 	FieldTurns = "turns"
 	// FieldToolUses holds the string denoting the tool_uses field in the database.
 	FieldToolUses = "tool_uses"
+	// FieldDesiredPhase holds the string denoting the desired_phase field in the database.
+	FieldDesiredPhase = "desired_phase"
 	// FieldAgentID holds the string denoting the agent_id field in the database.
 	FieldAgentID = "agent_id"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
@@ -72,6 +76,7 @@ var Columns = []string{
 	FieldCost,
 	FieldTurns,
 	FieldToolUses,
+	FieldDesiredPhase,
 	FieldAgentID,
 }
 
@@ -99,6 +104,18 @@ var (
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
+
+const DefaultDesiredPhase types.TaskPhase = "unspecified"
+
+// DesiredPhaseValidator is a validator for the "desired_phase" field enum values. It is called by the builders before save.
+func DesiredPhaseValidator(dp types.TaskPhase) error {
+	switch dp {
+	case "unspecified", "running", "awaiting", "suspended":
+		return nil
+	default:
+		return fmt.Errorf("task: invalid enum value for desired_phase field: %q", dp)
+	}
+}
 
 // OrderOption defines the ordering options for the Task queries.
 type OrderOption func(*sql.Selector)
@@ -151,6 +168,11 @@ func ByCost(opts ...sql.OrderTermOption) OrderOption {
 // ByTurns orders the results by the turns field.
 func ByTurns(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTurns, opts...).ToFunc()
+}
+
+// ByDesiredPhase orders the results by the desired_phase field.
+func ByDesiredPhase(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDesiredPhase, opts...).ToFunc()
 }
 
 // ByAgentID orders the results by the agent_id field.

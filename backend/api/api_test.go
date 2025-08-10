@@ -281,3 +281,7 @@ func (m *MockAgentRuntime) EventHub() *stream.EventHub {
 func (m *MockAgentRuntime) TriggerReconciliation(id uuid.UUID) {
 	return
 }
+
+func (m *MockAgentRuntime) CancelTask(id uuid.UUID) {
+	return
+}
