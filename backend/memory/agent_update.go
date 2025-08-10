@@ -22,8 +22,9 @@ import (
 // AgentUpdate is the builder for updating Agent entities.
 type AgentUpdate struct {
 	config
-	hooks    []Hook
-	mutation *AgentMutation
+	hooks     []Hook
+	mutation  *AgentMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the AgentUpdate builder.
@@ -315,6 +316,12 @@ func (au *AgentUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (au *AgentUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AgentUpdate {
+	au.modifiers = append(au.modifiers, modifiers...)
+	return au
+}
+
 func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := au.check(); err != nil {
 		return n, err
@@ -551,6 +558,7 @@ func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(au.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, au.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{agent.Label}
@@ -566,9 +574,10 @@ func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // AgentUpdateOne is the builder for updating a single Agent entity.
 type AgentUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *AgentMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *AgentMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdateTime sets the "update_time" field.
@@ -867,6 +876,12 @@ func (auo *AgentUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (auo *AgentUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *AgentUpdateOne {
+	auo.modifiers = append(auo.modifiers, modifiers...)
+	return auo
+}
+
 func (auo *AgentUpdateOne) sqlSave(ctx context.Context) (_node *Agent, err error) {
 	if err := auo.check(); err != nil {
 		return _node, err
@@ -1120,6 +1135,7 @@ func (auo *AgentUpdateOne) sqlSave(ctx context.Context) (_node *Agent, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(auo.modifiers...)
 	_node = &Agent{config: auo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

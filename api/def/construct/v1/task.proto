@@ -91,6 +91,9 @@ message TaskStatus {
 
   // turn is the current turn of the task.
   int64 turn = 3;
+
+  // message_count is the total number of messages associated with this task.
+  int64 message_count = 4;
 }
 
 // TaskPhase represents the current operational state of an task.

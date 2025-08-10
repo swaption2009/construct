@@ -145,12 +145,13 @@ func showTaskPicker(ctx context.Context, apiClient *api.Client, options *resumeO
 		}
 
 		tableRows = append(tableRows, terminal.TableRow{
-			ID:          task.Metadata.Id,
-			CreatedAt:   task.Metadata.CreatedAt.AsTime(),
-			UpdatedAt:   task.Metadata.UpdatedAt.AsTime(),
-			Workspace:   workspace,
-			Description: task.Spec.Description,
-			Task:        task,
+			ID:           task.Metadata.Id,
+			CreatedAt:    task.Metadata.CreatedAt.AsTime(),
+			UpdatedAt:    task.Metadata.UpdatedAt.AsTime(),
+			Workspace:    workspace,
+			MessageCount: task.Status.MessageCount,
+			Description:  task.Spec.Description,
+			Task:         task,
 		})
 	}
 

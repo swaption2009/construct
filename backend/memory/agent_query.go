@@ -32,6 +32,7 @@ type AgentQuery struct {
 	withMessages   *MessageQuery
 	withDelegates  *AgentQuery
 	withDelegators *AgentQuery
+	modifiers      []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -376,8 +377,9 @@ func (aq *AgentQuery) Clone() *AgentQuery {
 		withDelegates:  aq.withDelegates.Clone(),
 		withDelegators: aq.withDelegators.Clone(),
 		// clone intermediate query.
-		sql:  aq.sql.Clone(),
-		path: aq.path,
+		sql:       aq.sql.Clone(),
+		path:      aq.path,
+		modifiers: append([]func(*sql.Selector){}, aq.modifiers...),
 	}
 }
 
@@ -530,6 +532,9 @@ func (aq *AgentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Agent,
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(aq.modifiers) > 0 {
+		_spec.Modifiers = aq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -791,6 +796,9 @@ func (aq *AgentQuery) loadDelegators(ctx context.Context, query *AgentQuery, nod
 
 func (aq *AgentQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := aq.querySpec()
+	if len(aq.modifiers) > 0 {
+		_spec.Modifiers = aq.modifiers
+	}
 	_spec.Node.Columns = aq.ctx.Fields
 	if len(aq.ctx.Fields) > 0 {
 		_spec.Unique = aq.ctx.Unique != nil && *aq.ctx.Unique
@@ -856,6 +864,9 @@ func (aq *AgentQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if aq.ctx.Unique != nil && *aq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range aq.modifiers {
+		m(selector)
+	}
 	for _, p := range aq.predicates {
 		p(selector)
 	}
@@ -871,6 +882,12 @@ func (aq *AgentQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (aq *AgentQuery) Modify(modifiers ...func(s *sql.Selector)) *AgentSelect {
+	aq.modifiers = append(aq.modifiers, modifiers...)
+	return aq.Select()
 }
 
 // AgentGroupBy is the group-by builder for Agent entities.
@@ -961,4 +978,10 @@ func (as *AgentSelect) sqlScan(ctx context.Context, root *AgentQuery, v any) err
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (as *AgentSelect) Modify(modifiers ...func(s *sql.Selector)) *AgentSelect {
+	as.modifiers = append(as.modifiers, modifiers...)
+	return as
 }

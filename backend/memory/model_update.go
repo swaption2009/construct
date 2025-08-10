@@ -24,8 +24,9 @@ import (
 // ModelUpdate is the builder for updating Model entities.
 type ModelUpdate struct {
 	config
-	hooks    []Hook
-	mutation *ModelMutation
+	hooks     []Hook
+	mutation  *ModelMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the ModelUpdate builder.
@@ -377,6 +378,12 @@ func (mu *ModelUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (mu *ModelUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ModelUpdate {
+	mu.modifiers = append(mu.modifiers, modifiers...)
+	return mu
+}
+
 func (mu *ModelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := mu.check(); err != nil {
 		return n, err
@@ -564,6 +571,7 @@ func (mu *ModelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(mu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{model.Label}
@@ -579,9 +587,10 @@ func (mu *ModelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // ModelUpdateOne is the builder for updating a single Model entity.
 type ModelUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *ModelMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *ModelMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdateTime sets the "update_time" field.
@@ -940,6 +949,12 @@ func (muo *ModelUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (muo *ModelUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ModelUpdateOne {
+	muo.modifiers = append(muo.modifiers, modifiers...)
+	return muo
+}
+
 func (muo *ModelUpdateOne) sqlSave(ctx context.Context) (_node *Model, err error) {
 	if err := muo.check(); err != nil {
 		return _node, err
@@ -1144,6 +1159,7 @@ func (muo *ModelUpdateOne) sqlSave(ctx context.Context) (_node *Model, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(muo.modifiers...)
 	_node = &Model{config: muo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

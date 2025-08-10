@@ -14,6 +14,7 @@ const idWidth = 36
 const createdAtWidth = 16
 const updatedAtWidth = 16
 const workspaceWidth = 50
+const messageCountWidth = 10
 const summaryWidth = 50
 
 type SelectableTable struct {
@@ -34,6 +35,7 @@ type TableRow struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Workspace   string
+	MessageCount int64
 	Description string
 	Task        *v1.Task
 }
@@ -47,11 +49,12 @@ func (t *TableRow) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (t *TableRow) View() string {
-	return fmt.Sprintf("%s  %s  %s  %s  %s",
+	return fmt.Sprintf("%s  %s  %s  %s  %d  %s",
 		t.ID,
 		t.CreatedAt.Format("2006-01-02 15:04"),
 		t.UpdatedAt.Format("2006-01-02 15:04"),
 		truncate(t.Workspace, workspaceWidth),
+		t.MessageCount,
 		truncate(t.Description, summaryWidth),
 	)
 }
@@ -164,11 +167,12 @@ func (t *SelectableTable) View() string {
 }
 
 func (t *SelectableTable) renderHeader() string {
-	header := fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %-*s",
+	header := fmt.Sprintf("%-*s  %-*s  %-*s  %-*s  %-*s  %-*s",
 		idWidth, "ID",
 		createdAtWidth, "Created",
 		updatedAtWidth, "Updated",
 		workspaceWidth, "Workspace",
+		messageCountWidth, "Messages",
 		summaryWidth, "Summary")
 
 	return t.headerStyle.Render(header)

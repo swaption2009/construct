@@ -293,7 +293,9 @@ type TaskStatus struct {
 	// phase is the current operational state of the task.
 	Phase TaskPhase `protobuf:"varint,2,opt,name=phase,proto3,enum=construct.v1.TaskPhase" json:"phase,omitempty"`
 	// turn is the current turn of the task.
-	Turn          int64 `protobuf:"varint,3,opt,name=turn,proto3" json:"turn,omitempty"`
+	Turn int64 `protobuf:"varint,3,opt,name=turn,proto3" json:"turn,omitempty"`
+	// message_count is the total number of messages associated with this task.
+	MessageCount  int64 `protobuf:"varint,4,opt,name=message_count,json=messageCount,proto3" json:"message_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -345,6 +347,13 @@ func (x *TaskStatus) GetPhase() TaskPhase {
 func (x *TaskStatus) GetTurn() int64 {
 	if x != nil {
 		return x.Turn
+	}
+	return 0
+}
+
+func (x *TaskStatus) GetMessageCount() int64 {
+	if x != nil {
+		return x.MessageCount
 	}
 	return 0
 }
@@ -1270,12 +1279,13 @@ const file_construct_v1_task_proto_rawDesc = "" +
 	"\tworkspace\x18\x02 \x01(\tB\x06\xbaH\x03\xc8\x01\x01R\tworkspace\x12F\n" +
 	"\rdesired_phase\x18\x03 \x01(\x0e2\x17.construct.v1.TaskPhaseB\b\xbaH\x05\x82\x01\x02\x10\x01R\fdesiredPhase\x12*\n" +
 	"\vdescription\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x10R\vdescriptionB\v\n" +
-	"\t_agent_id\"\x88\x01\n" +
+	"\t_agent_id\"\xad\x01\n" +
 	"\n" +
 	"TaskStatus\x12-\n" +
 	"\x05usage\x18\x01 \x01(\v2\x17.construct.v1.TaskUsageR\x05usage\x127\n" +
 	"\x05phase\x18\x02 \x01(\x0e2\x17.construct.v1.TaskPhaseB\b\xbaH\x05\x82\x01\x02\x10\x01R\x05phase\x12\x12\n" +
-	"\x04turn\x18\x03 \x01(\x03R\x04turn\"\xc2\x02\n" +
+	"\x04turn\x18\x03 \x01(\x03R\x04turn\x12#\n" +
+	"\rmessage_count\x18\x04 \x01(\x03R\fmessageCount\"\xc2\x02\n" +
 	"\tTaskUsage\x12!\n" +
 	"\finput_tokens\x18\x01 \x01(\x03R\vinputTokens\x12#\n" +
 	"\routput_tokens\x18\x02 \x01(\x03R\foutputTokens\x12,\n" +

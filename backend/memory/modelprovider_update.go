@@ -21,8 +21,9 @@ import (
 // ModelProviderUpdate is the builder for updating ModelProvider entities.
 type ModelProviderUpdate struct {
 	config
-	hooks    []Hook
-	mutation *ModelProviderMutation
+	hooks     []Hook
+	mutation  *ModelProviderMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the ModelProviderUpdate builder.
@@ -202,6 +203,12 @@ func (mpu *ModelProviderUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (mpu *ModelProviderUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ModelProviderUpdate {
+	mpu.modifiers = append(mpu.modifiers, modifiers...)
+	return mpu
+}
+
 func (mpu *ModelProviderUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := mpu.check(); err != nil {
 		return n, err
@@ -280,6 +287,7 @@ func (mpu *ModelProviderUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(mpu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, mpu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{modelprovider.Label}
@@ -295,9 +303,10 @@ func (mpu *ModelProviderUpdate) sqlSave(ctx context.Context) (n int, err error) 
 // ModelProviderUpdateOne is the builder for updating a single ModelProvider entity.
 type ModelProviderUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *ModelProviderMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *ModelProviderMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetUpdateTime sets the "update_time" field.
@@ -484,6 +493,12 @@ func (mpuo *ModelProviderUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (mpuo *ModelProviderUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *ModelProviderUpdateOne {
+	mpuo.modifiers = append(mpuo.modifiers, modifiers...)
+	return mpuo
+}
+
 func (mpuo *ModelProviderUpdateOne) sqlSave(ctx context.Context) (_node *ModelProvider, err error) {
 	if err := mpuo.check(); err != nil {
 		return _node, err
@@ -579,6 +594,7 @@ func (mpuo *ModelProviderUpdateOne) sqlSave(ctx context.Context) (_node *ModelPr
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(mpuo.modifiers...)
 	_node = &ModelProvider{config: mpuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

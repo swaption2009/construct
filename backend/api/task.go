@@ -12,10 +12,10 @@ import (
 	"github.com/furisto/construct/backend/memory"
 	"github.com/furisto/construct/backend/memory/agent"
 	"github.com/furisto/construct/backend/memory/extension"
+	"github.com/furisto/construct/backend/memory/message"
 	"github.com/furisto/construct/backend/memory/task"
 	"github.com/furisto/construct/backend/stream"
 	"github.com/google/uuid"
-
 )
 
 var _ v1connect.TaskServiceHandler = (*TaskHandler)(nil)
@@ -103,13 +103,21 @@ func (h *TaskHandler) ListTasks(ctx context.Context, req *connect.Request[v1.Lis
 		query = query.Where(extension.UUIDHasPrefix(task.FieldID, *req.Msg.Filter.TaskIdPrefix))
 	}
 
-	if req.Msg.Filter != nil && req.Msg.Filter.HasMessages != nil {
-		if *req.Msg.Filter.HasMessages {
-			query = query.Where(task.HasMessages())
-		} else {
-			query = query.Where(task.Not(task.HasMessages()))
+	query.Modify(func(s *sql.Selector) {
+		m := sql.Table(message.Table)
+		countExpr := sql.Count("*")
+		s.LeftJoin(m).On(s.C(task.FieldID), m.C(message.FieldTaskID))
+		s.AppendSelect(sql.As(countExpr, "messages_count"))
+		s.GroupBy(s.C(task.FieldID))
+
+		if req.Msg.Filter != nil && req.Msg.Filter.HasMessages != nil {
+			if *req.Msg.Filter.HasMessages {
+				s.Having(sql.GT(countExpr, 0))
+			} else {
+				s.Having(sql.EQ(countExpr, 0))
+			}
 		}
-	}
+	})
 
 	sortField := v1.SortField_SORT_FIELD_CREATED_AT
 	if req.Msg.SortField != nil {
@@ -151,6 +159,14 @@ func (h *TaskHandler) ListTasks(ctx context.Context, req *connect.Request[v1.Lis
 		if err != nil {
 			return nil, apiError(err)
 		}
+
+		var mc int64
+		if v, err := t.Value("messages_count"); err == nil {
+			if n, ok := v.(int64); ok {
+				mc = n
+			}
+		}
+		protoTask.Status.MessageCount = mc
 		protoTasks = append(protoTasks, protoTask)
 	}
 
