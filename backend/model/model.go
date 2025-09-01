@@ -69,6 +69,8 @@ func SupportedModels(provider ModelProfileKind) []Model {
 		return SupportedOpenAIModels()
 	case ProviderKindGemini:
 		return SupportedGeminiModels()
+	case ProviderKindXAI:
+		return SupportedXAIModels()
 	}
 
 	return nil

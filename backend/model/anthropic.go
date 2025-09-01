@@ -209,13 +209,19 @@ func SupportedAnthropicModels() []Model {
 	}
 }
 
-func NewAnthropicProvider(apiKey string) (*AnthropicProvider, error) {
+func NewAnthropicProvider(apiKey string, url string) (*AnthropicProvider, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("anthropic API key is required")
 	}
+	options := []option.RequestOption{
+		option.WithAPIKey(apiKey),
+	}
+	if url != "" {
+		options = append(options, option.WithBaseURL(url))
+	}
 
 	provider := &AnthropicProvider{
-		client: anthropic.NewClient(option.WithAPIKey(apiKey)),
+		client: anthropic.NewClient(options...),
 	}
 
 	return provider, nil
@@ -370,6 +376,8 @@ func (p *AnthropicProvider) transformMessages(messages []*Message) ([]anthropic.
 			anthropicMessages[i] = anthropic.NewUserMessage(anthropicBlocks...)
 		case MessageSourceModel:
 			anthropicMessages[i] = anthropic.NewAssistantMessage(anthropicBlocks...)
+		case MessageSourceSystem:
+			anthropicMessages[i] = anthropic.NewUserMessage(anthropicBlocks...)
 		}
 	}
 

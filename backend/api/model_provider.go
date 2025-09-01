@@ -50,13 +50,18 @@ func (h *ModelProviderHandler) CreateModelProvider(ctx context.Context, req *con
 	}
 
 	modelProvider, err := memory.Transaction(ctx, h.db, func(tx *memory.Client) (*memory.ModelProvider, error) {
-		modelProvider, err := tx.ModelProvider.Create().
+		create := tx.ModelProvider.Create().
 			SetID(modelProviderID).
 			SetName(req.Msg.Name).
 			SetProviderType(providerType).
 			SetEnabled(true).
-			SetSecret(encryptedSecret).
-			Save(ctx)
+			SetSecret(encryptedSecret)
+
+		if req.Msg.Url != nil {
+			create = create.SetURL(*req.Msg.Url)
+		}
+
+		modelProvider, err := create.Save(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to insert model provider: %w", err)
 		}

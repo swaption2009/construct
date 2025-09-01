@@ -16,6 +16,7 @@ import (
 type modelProviderCreateOptions struct {
 	ApiKey string
 	Type   ModelProviderType
+	Url    string
 }
 
 func NewModelProviderCreateCmd() *cobra.Command {
@@ -68,7 +69,7 @@ func NewModelProviderCreateCmd() *cobra.Command {
 
 	cmd.Flags().StringVarP(&options.ApiKey, "api-key", "k", "", "The API key for the model provider (can also be set via environment variable)")
 	cmd.Flags().VarP(&options.Type, "type", "t", "The type of the model provider (anthropic, openai)")
-
+	
 	cmd.MarkFlagRequired("type")
 
 	return cmd
@@ -131,6 +132,8 @@ func APIKeyEnvVar(providerType ModelProviderType) (string, error) {
 		return "ANTHROPIC_API_KEY", nil
 	case ModelProviderTypeGemini:
 		return "GEMINI_API_KEY", nil
+	case ModelProviderTypeXAI:
+		return "XAI_API_KEY", nil
 	default:
 		return "", fmt.Errorf("unknown provider type: %s", providerType)
 	}
@@ -144,6 +147,8 @@ func getProviderDisplayName(providerType ModelProviderType) (string, error) {
 		return "Anthropic", nil
 	case ModelProviderTypeGemini:
 		return "Gemini", nil
+	case ModelProviderTypeXAI:
+		return "xAI", nil
 	default:
 		return "", fmt.Errorf("unknown provider type: %s", providerType)
 	}

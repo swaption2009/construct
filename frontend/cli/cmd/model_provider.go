@@ -43,6 +43,7 @@ const (
 	ModelProviderTypeOpenAI    ModelProviderType = "openai"
 	ModelProviderTypeAnthropic ModelProviderType = "anthropic"
 	ModelProviderTypeGemini    ModelProviderType = "gemini"
+	ModelProviderTypeXAI       ModelProviderType = "xai"
 	ModelProviderTypeUnknown   ModelProviderType = "unknown"
 )
 
@@ -106,8 +107,10 @@ func ToModelProviderType(v string) (ModelProviderType, error) {
 		return ModelProviderTypeAnthropic, nil
 	case "gemini":
 		return ModelProviderTypeGemini, nil
+	case "xai":
+		return ModelProviderTypeXAI, nil
 	default:
-		return ModelProviderTypeUnknown, errors.New(`must be one of "openai","anthropic","gemini"`)
+		return ModelProviderTypeUnknown, errors.New(`must be one of "openai","anthropic","gemini","xai"`)
 	}
 }
 
@@ -119,6 +122,8 @@ func (e *ModelProviderType) ToAPI() (v1.ModelProviderType, error) {
 		return v1.ModelProviderType_MODEL_PROVIDER_TYPE_ANTHROPIC, nil
 	case ModelProviderTypeGemini:
 		return v1.ModelProviderType_MODEL_PROVIDER_TYPE_GEMINI, nil
+	case ModelProviderTypeXAI:
+		return v1.ModelProviderType_MODEL_PROVIDER_TYPE_XAI, nil
 	default:
 		return v1.ModelProviderType_MODEL_PROVIDER_TYPE_UNSPECIFIED, errors.New("invalid model provider type")
 	}
@@ -132,6 +137,8 @@ func ConvertModelProviderTypeToDisplay(modelProviderType v1.ModelProviderType) M
 		return ModelProviderTypeAnthropic
 	case v1.ModelProviderType_MODEL_PROVIDER_TYPE_GEMINI:
 		return ModelProviderTypeGemini
+	case v1.ModelProviderType_MODEL_PROVIDER_TYPE_XAI:
+		return ModelProviderTypeXAI
 	}
 
 	return ModelProviderTypeUnknown

@@ -54,6 +54,8 @@ message CreateModelProviderRequest {
 
   // provider_type specifies which AI service this provider represents.
   ModelProviderType provider_type = 30 [(buf.validate.field).enum.defined_only = true];
+
+  optional string url = 31 [(buf.validate.field).string.max_len = 255];
 }
 
 // CreateModelProviderResponse contains the newly created model provider.
@@ -204,4 +206,7 @@ enum ModelProviderType {
 
   // MODEL_PROVIDER_TYPE_GEMINI represents Google's AI models (Gemini, etc.).
   MODEL_PROVIDER_TYPE_GEMINI = 3;
+
+  // MODEL_PROVIDER_TYPE_XAI represents xAI's AI models (Grok, etc.).
+  MODEL_PROVIDER_TYPE_XAI = 4;
 }

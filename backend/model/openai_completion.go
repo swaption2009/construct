@@ -15,11 +15,21 @@ type OpenAICompletionProvider struct {
 	client openai.Client
 }
 
-func NewOpenAICompletionProvider(apiKey string) (*OpenAICompletionProvider, error) {
+func NewOpenAICompletionProvider(apiKey string, url string) (*OpenAICompletionProvider, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("openai API key is required")
 	}
-	return &OpenAICompletionProvider{client: openai.NewClient(option.WithAPIKey(apiKey))}, nil
+
+	options := []option.RequestOption{
+		option.WithAPIKey(apiKey),
+	}
+	if url != "" {
+		options = append(options, option.WithBaseURL(url))
+	}
+
+	return &OpenAICompletionProvider{
+		client: openai.NewClient(options...),
+	}, nil
 }
 
 func (p *OpenAICompletionProvider) InvokeModel(ctx context.Context, model, systemPrompt string, messages []*Message, opts ...InvokeModelOption) (*Message, error) {

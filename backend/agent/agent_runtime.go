@@ -671,6 +671,12 @@ func (rt *Runtime) modelProviderClient(m *memory.Model) (model.ModelProvider, er
 			return nil, err
 		}
 		return provider, nil
+	case types.ModelProviderTypeXAI:
+		provider, err := model.NewAnthropicProvider(auth.APIKey)
+		if err != nil {
+			return nil, err
+		}
+		return provider, nil
 	default:
 		return nil, fmt.Errorf("unknown model provider type: %s", provider.ProviderType)
 	}

@@ -35,8 +35,10 @@ func ConvertMemoryMessageSourceToModel(source types.MessageSource) (model.Messag
 	switch source {
 	case types.MessageSourceAssistant:
 		return model.MessageSourceModel, nil
-	case types.MessageSourceUser, types.MessageSourceSystem:
+	case types.MessageSourceUser:
 		return model.MessageSourceUser, nil
+	case types.MessageSourceSystem:
+		return model.MessageSourceSystem, nil
 	default:
 		return "", fmt.Errorf("unknown message source: %s", source)
 	}
@@ -694,4 +696,3 @@ func ConvertModelUsageToMemory(usage *model.Usage) *types.MessageUsage {
 		CacheWriteTokens: usage.CacheWriteTokens,
 	}
 }
-

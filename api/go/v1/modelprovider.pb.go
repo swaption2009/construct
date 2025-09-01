@@ -39,6 +39,8 @@ const (
 	ModelProviderType_MODEL_PROVIDER_TYPE_OPENAI ModelProviderType = 2
 	// MODEL_PROVIDER_TYPE_GEMINI represents Google's AI models (Gemini, etc.).
 	ModelProviderType_MODEL_PROVIDER_TYPE_GEMINI ModelProviderType = 3
+	// MODEL_PROVIDER_TYPE_XAI represents xAI's AI models (Grok, etc.).
+	ModelProviderType_MODEL_PROVIDER_TYPE_XAI ModelProviderType = 4
 )
 
 // Enum value maps for ModelProviderType.
@@ -48,12 +50,14 @@ var (
 		1: "MODEL_PROVIDER_TYPE_ANTHROPIC",
 		2: "MODEL_PROVIDER_TYPE_OPENAI",
 		3: "MODEL_PROVIDER_TYPE_GEMINI",
+		4: "MODEL_PROVIDER_TYPE_XAI",
 	}
 	ModelProviderType_value = map[string]int32{
 		"MODEL_PROVIDER_TYPE_UNSPECIFIED": 0,
 		"MODEL_PROVIDER_TYPE_ANTHROPIC":   1,
 		"MODEL_PROVIDER_TYPE_OPENAI":      2,
 		"MODEL_PROVIDER_TYPE_GEMINI":      3,
+		"MODEL_PROVIDER_TYPE_XAI":         4,
 	}
 )
 
@@ -97,6 +101,7 @@ type CreateModelProviderRequest struct {
 	Authentication isCreateModelProviderRequest_Authentication `protobuf_oneof:"authentication"`
 	// provider_type specifies which AI service this provider represents.
 	ProviderType  ModelProviderType `protobuf:"varint,30,opt,name=provider_type,json=providerType,proto3,enum=construct.v1.ModelProviderType" json:"provider_type,omitempty"`
+	Url           *string           `protobuf:"bytes,31,opt,name=url,proto3,oneof" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -159,6 +164,13 @@ func (x *CreateModelProviderRequest) GetProviderType() ModelProviderType {
 		return x.ProviderType
 	}
 	return ModelProviderType_MODEL_PROVIDER_TYPE_UNSPECIFIED
+}
+
+func (x *CreateModelProviderRequest) GetUrl() string {
+	if x != nil && x.Url != nil {
+		return *x.Url
+	}
+	return ""
 }
 
 type isCreateModelProviderRequest_Authentication interface {
@@ -915,14 +927,16 @@ var File_construct_v1_modelprovider_proto protoreflect.FileDescriptor
 
 const file_construct_v1_modelprovider_proto_rawDesc = "" +
 	"\n" +
-	" construct/v1/modelprovider.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc5\x01\n" +
+	" construct/v1/modelprovider.proto\x12\fconstruct.v1\x1a\x1bbuf/validate/validate.proto\x1a\x19construct/v1/common.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xee\x01\n" +
 	"\x1aCreateModelProviderRequest\x12\x1e\n" +
 	"\x04name\x18\x01 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\x04name\x12%\n" +
 	"\aapi_key\x18\x02 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x01\x18\xff\x01H\x00R\x06apiKey\x12N\n" +
-	"\rprovider_type\x18\x1e \x01(\x0e2\x1f.construct.v1.ModelProviderTypeB\b\xbaH\x05\x82\x01\x02\x10\x01R\fproviderTypeB\x10\n" +
-	"\x0eauthentication\"i\n" +
+	"\rprovider_type\x18\x1e \x01(\x0e2\x1f.construct.v1.ModelProviderTypeB\b\xbaH\x05\x82\x01\x02\x10\x01R\fproviderType\x12\x1f\n" +
+	"\x03url\x18\x1f \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01H\x01R\x03url\x88\x01\x01B\x10\n" +
+	"\x0eauthenticationB\x06\n" +
+	"\x04_url\"i\n" +
 	"\x1bCreateModelProviderResponse\x12J\n" +
 	"\x0emodel_provider\x18\x01 \x01(\v2\x1b.construct.v1.ModelProviderB\x06\xbaH\x03\xc8\x01\x01R\rmodelProvider\"\x87\x02\n" +
 	"\x15ModelProviderMetadata\x12\x18\n" +
@@ -981,12 +995,13 @@ const file_construct_v1_modelprovider_proto_rawDesc = "" +
 	"\x0emodel_provider\x18\x01 \x01(\v2\x1b.construct.v1.ModelProviderB\x06\xbaH\x03\xc8\x01\x01R\rmodelProvider\"6\n" +
 	"\x1aDeleteModelProviderRequest\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x1d\n" +
-	"\x1bDeleteModelProviderResponse*\x9b\x01\n" +
+	"\x1bDeleteModelProviderResponse*\xb8\x01\n" +
 	"\x11ModelProviderType\x12#\n" +
 	"\x1fMODEL_PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dMODEL_PROVIDER_TYPE_ANTHROPIC\x10\x01\x12\x1e\n" +
 	"\x1aMODEL_PROVIDER_TYPE_OPENAI\x10\x02\x12\x1e\n" +
-	"\x1aMODEL_PROVIDER_TYPE_GEMINI\x10\x032\xb6\x04\n" +
+	"\x1aMODEL_PROVIDER_TYPE_GEMINI\x10\x03\x12\x1b\n" +
+	"\x17MODEL_PROVIDER_TYPE_XAI\x10\x042\xb6\x04\n" +
 	"\x14ModelProviderService\x12l\n" +
 	"\x13CreateModelProvider\x12(.construct.v1.CreateModelProviderRequest\x1a).construct.v1.CreateModelProviderResponse\"\x00\x12f\n" +
 	"\x10GetModelProvider\x12%.construct.v1.GetModelProviderRequest\x1a&.construct.v1.GetModelProviderResponse\"\x03\x90\x02\x01\x12l\n" +
