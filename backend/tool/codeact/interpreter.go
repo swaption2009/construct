@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/grafana/sobek"
 	"github.com/invopop/jsonschema"
 	"github.com/spf13/afero"
@@ -26,7 +25,7 @@ type Interpreter struct {
 	Tools        []Tool
 	Interceptors []Interceptor
 
-	inputSchema any
+	inputSchema map[string]any
 }
 
 func NewInterpreter(tools []Tool, interceptors []Interceptor) *Interpreter {
@@ -36,7 +35,7 @@ func NewInterpreter(tools []Tool, interceptors []Interceptor) *Interpreter {
 	}
 	var args InterpreterArgs
 	reflected := reflector.Reflect(args)
-	inputSchema := map[string]interface{}{
+	inputSchema := map[string]any{
 		"type":       "object",
 		"properties": reflected.Properties,
 	}
@@ -56,7 +55,7 @@ func (c *Interpreter) Description() string {
 	return "Can be used to call tools using Javascript syntax. Write a complete javascript program and use only the functions that have been specified. If you use any other functions the tool call will fail."
 }
 
-func (c *Interpreter) Schema() any {
+func (c *Interpreter) Schema() map[string]any {
 	return c.inputSchema
 }
 
@@ -64,7 +63,7 @@ func (c *Interpreter) Run(ctx context.Context, fsys afero.Fs, input json.RawMess
 	return "", nil
 }
 
-func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.RawMessage, taskID uuid.UUID) (*InterpreterResult, error) {
+func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.RawMessage, task *Task) (*InterpreterResult, error) {
 	var args InterpreterArgs
 	err := json.Unmarshal(input, &args)
 	if err != nil {
@@ -75,7 +74,7 @@ func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.R
 	vm.SetFieldNameMapper(sobek.TagFieldNameMapper("json", true))
 
 	var stdout bytes.Buffer
-	session := NewSession(taskID, vm, &stdout, &stdout, fsys)
+	session := NewSession(task, vm, &stdout, &stdout, fsys)
 
 	for _, tool := range c.Tools {
 		vm.Set(tool.Name(), c.intercept(session, tool, tool.ToolHandler(session)))
