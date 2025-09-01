@@ -16,9 +16,9 @@ type InterpreterArgs struct {
 }
 
 type InterpreterResult struct {
-	ConsoleOutput string
-	FunctionCalls []FunctionCall
-	ToolStats     map[string]int64
+	ConsoleOutput string `json:"console_output"`
+	FunctionCalls []FunctionCall `json:"function_calls"`
+	ToolStats     map[string]int64 `json:"tool_stats"`
 }
 
 type Interpreter struct {

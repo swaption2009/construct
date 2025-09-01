@@ -564,7 +564,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 
 		switch toolCall.Tool {
 		case base.ToolNameCodeInterpreter:
-			os.WriteFile("/tmp/tool_call.json", []byte(toolCall.Args), 0644)
+			logInterpreterArgs(task.ID, toolCall.Args)
 			result, err := rt.interpreter.Interpret(ctx, afero.NewOsFs(), toolCall.Args, &codeact.Task{
 				ID:               task.ID,
 				ProjectDirectory: task.ProjectDirectory,
@@ -579,6 +579,7 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 			for tool, count := range result.ToolStats {
 				toolStats[tool] += count
 			}
+			logInterpreterResult(task.ID, result)
 		default:
 			slog.WarnContext(ctx, "model requested unknown tool", "tool", toolCall.Tool)
 			continue
@@ -586,6 +587,50 @@ func (rt *Runtime) callTools(ctx context.Context, task *memory.Task, content []m
 	}
 
 	return toolResults, toolStats, nil
+}
+
+func logInterpreterArgs(taskID uuid.UUID, args json.RawMessage) {
+	var a codeact.InterpreterArgs
+	err := json.Unmarshal(args, &a)
+	if err != nil {
+		slog.Error("failed to unmarshal interpreter args", "error", err)
+		return
+	}
+
+	logInterpreter(taskID, a.Script, "args_interpreter")
+}
+
+func logInterpreterResult(taskID uuid.UUID, result *codeact.InterpreterResult) {
+	jsonResult, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		slog.Error("failed to marshal interpreter result", "error", err)
+		return
+	}
+
+	logInterpreter(taskID, string(jsonResult), "result_interpreter")
+}
+
+func logInterpreter(taskID uuid.UUID, content string, operation string) {
+	taskDir := fmt.Sprintf("/tmp/tool_call/%s", taskID.String())
+	if _, err := os.Stat(taskDir); os.IsNotExist(err) {
+		err = os.MkdirAll(taskDir, 0755)
+		if err != nil {
+			slog.Error("failed to create task directory", "error", err)
+			return
+		}
+	}
+
+	fp, err := os.OpenFile(fmt.Sprintf("%s/%s.json", taskDir, operation), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		slog.Error("failed to open file", "error", err)
+		return
+	}
+	defer fp.Close()
+
+	_, err = fp.WriteString(content + "\n\n" + strings.Repeat("-", 100) + "\n\n")
+	if err != nil {
+		slog.Error("failed to write interpreter args", "error", err)
+	}
 }
 
 func (rt *Runtime) modelProviderClient(m *memory.Model) (model.ModelProvider, error) {
