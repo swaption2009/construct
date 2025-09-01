@@ -34,9 +34,6 @@ func (g *GeminiModelProfile) Kind() ModelProfileKind {
 }
 
 func (g *GeminiModelProfile) Validate() error {
-	if g.APIKey == "" {
-		return fmt.Errorf("gemini API key is required")
-	}
 	if g.DefaultTemperature != nil && (*g.DefaultTemperature < 0 || *g.DefaultTemperature > 1.0) {
 		return fmt.Errorf("temperature must be between 0 and 1.0")
 	}
@@ -277,63 +274,98 @@ func (p *GeminiProvider) convertJSONSchemaToGemini(jsonSchema map[string]any) (*
 
 	schema.Type = schemaTypeToGemini(schemaType.(string))
 
-	if properties, ok := jsonSchema["properties"].(map[string]any); ok {
+	if properties := jsonSchema["properties"]; properties != nil {
 		schema.Properties = make(map[string]*genai.Schema)
-		for propName, propDef := range properties {
+		
+		propBytes, err := json.Marshal(properties)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal properties: %w", err)
+		}
+		
+		var propMap map[string]any
+		if err := json.Unmarshal(propBytes, &propMap); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal properties: %w", err)
+		}
+		
+		for propName, propDef := range propMap {
 			if propDefMap, ok := propDef.(map[string]any); ok {
-				propSchema := &genai.Schema{}
-				if propType, ok := propDefMap["type"].(string); ok {
-					switch propType {
-					case "object":
-						propSchema.Type = genai.TypeObject
-					case "string":
-						propSchema.Type = genai.TypeString
-					case "number":
-						propSchema.Type = genai.TypeNumber
-					case "integer":
-						propSchema.Type = genai.TypeInteger
-					case "boolean":
-						propSchema.Type = genai.TypeBoolean
-					case "array":
-						propSchema.Type = genai.TypeArray
-					default:
-						propSchema.Type = genai.TypeString
-					}
-				}
-				if description, ok := propDefMap["description"].(string); ok {
-					propSchema.Description = description
-				}
-				// Handle enum values
-				if enum, ok := propDefMap["enum"].([]any); ok {
-					enumStrs := make([]string, 0, len(enum))
-					for _, e := range enum {
-						if s, ok := e.(string); ok {
-							enumStrs = append(enumStrs, s)
-						}
-					}
-					propSchema.Enum = enumStrs
-				}
-				// Handle array items
-				if items, ok := propDefMap["items"].(map[string]any); ok {
-					itemsSchema, _ := p.convertJSONSchemaToGemini(items)
-					propSchema.Items = itemsSchema
+				propSchema, err := p.convertPropertyToGemini(propDefMap)
+				if err != nil {
+					continue // Skip invalid properties
 				}
 				schema.Properties[propName] = propSchema
 			}
 		}
 	}
 
-	if required, ok := jsonSchema["required"].([]any); ok {
-		requiredStrs := make([]string, 0, len(required))
-		for _, r := range required {
-			if s, ok := r.(string); ok {
-				requiredStrs = append(requiredStrs, s)
+	if required := jsonSchema["required"]; required != nil {
+		requiredBytes, err := json.Marshal(required)
+		if err == nil {
+			var requiredStrs []string
+			if err := json.Unmarshal(requiredBytes, &requiredStrs); err == nil {
+				schema.Required = requiredStrs
 			}
 		}
-		schema.Required = requiredStrs
 	}
 
 	return schema, nil
+}
+
+func (p *GeminiProvider) convertPropertyToGemini(propDef map[string]any) (*genai.Schema, error) {
+	propSchema := &genai.Schema{}
+	
+	if propType, ok := propDef["type"].(string); ok {
+		switch propType {
+		case "object":
+			propSchema.Type = genai.TypeObject
+			// Handle nested object properties
+			if nestedProps := propDef["properties"]; nestedProps != nil {
+				nestedSchema, err := p.convertJSONSchemaToGemini(propDef)
+				if err == nil {
+					propSchema.Properties = nestedSchema.Properties
+					propSchema.Required = nestedSchema.Required
+				}
+			}
+		case "string":
+			propSchema.Type = genai.TypeString
+		case "number":
+			propSchema.Type = genai.TypeNumber
+		case "integer":
+			propSchema.Type = genai.TypeInteger
+		case "boolean":
+			propSchema.Type = genai.TypeBoolean
+		case "array":
+			propSchema.Type = genai.TypeArray
+			// Handle array items
+			if items := propDef["items"]; items != nil {
+				if itemsMap, ok := items.(map[string]any); ok {
+					itemsSchema, err := p.convertPropertyToGemini(itemsMap)
+					if err == nil {
+						propSchema.Items = itemsSchema
+					}
+				}
+			}
+		default:
+			propSchema.Type = genai.TypeString
+		}
+	}
+	
+	if description, ok := propDef["description"].(string); ok {
+		propSchema.Description = description
+	}
+	
+	// Handle enum values
+	if enum := propDef["enum"]; enum != nil {
+		enumBytes, err := json.Marshal(enum)
+		if err == nil {
+			var enumStrs []string
+			if err := json.Unmarshal(enumBytes, &enumStrs); err == nil {
+				propSchema.Enum = enumStrs
+			}
+		}
+	}
+	
+	return propSchema, nil
 }
 
 func schemaTypeToGemini(schemaType string) genai.Type {
