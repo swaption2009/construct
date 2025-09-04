@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os"
+	"strings"
 
 	"github.com/grafana/sobek"
 	"github.com/invopop/jsonschema"
@@ -16,8 +16,8 @@ type InterpreterArgs struct {
 }
 
 type InterpreterResult struct {
-	ConsoleOutput string `json:"console_output"`
-	FunctionCalls []FunctionCall `json:"function_calls"`
+	ConsoleOutput string           `json:"console_output"`
+	FunctionCalls []FunctionCall   `json:"function_calls"`
 	ToolStats     map[string]int64 `json:"tool_stats"`
 }
 
@@ -89,8 +89,7 @@ func (c *Interpreter) Interpret(ctx context.Context, fsys afero.Fs, input json.R
 		}
 	}()
 
-	os.WriteFile("/tmp/script.js", []byte(args.Script), 0644)
-	_, err = vm.RunString(args.Script)
+	_, err = vm.RunString(ensureStrictMode(args.Script))
 	close(done)
 
 	callState, ok := GetValue[*FunctionCallState](session, "function_call_state")
@@ -116,4 +115,12 @@ func (c *Interpreter) intercept(session *Session, toolName Tool, inner func(sobe
 		wrapped = interceptor.Intercept(session, toolName, wrapped)
 	}
 	return wrapped
+}
+
+func ensureStrictMode(script string) string {
+	if strings.HasPrefix(script, "use strict;") {
+		return script
+	}
+
+	return "'use strict';\n" + script
 }
