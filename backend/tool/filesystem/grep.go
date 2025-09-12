@@ -83,8 +83,7 @@ func performRipgrep(ctx context.Context, input *GrepInput, cmdRunner shared.Comm
 
 	args = append(args, input.Query, input.Path)
 
-	cmd := exec.CommandContext(ctx, "rg", args...)
-	output, err := cmd.Output()
+	output, err := cmdRunner.Run(ctx, "rg", args...)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			// No matches found, return empty result
@@ -126,8 +125,7 @@ func performRegularGrep(ctx context.Context, input *GrepInput, cmdRunner shared.
 
 	args = append(args, input.Query, input.Path)
 
-	cmd := exec.CommandContext(ctx, "grep", args...)
-	output, err := cmd.Output()
+	output, err := cmdRunner.Run(ctx, "grep", args...)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			// No matches found, return empty result

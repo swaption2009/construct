@@ -1,0 +1,6 @@
+{"type":"begin","data":{"path":{"text":"/path/file.go"}}}
+{"type":"unknown_type","data":{"path":{"text":"/path/file.go"},"line_number":1,"lines":{"text":"should be ignored"}}}
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":2,"lines":{"text":"valid match"}}}
+{"type":"weird_type","data":{"some":"data"}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":3,"lines":{"text":"valid context"}}}
+{"type":"end","data":{"path":{"text":"/path/file.go"}}}

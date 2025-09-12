@@ -1,0 +1,3 @@
+{"type":"begin","data":{"path":{"text":"/path/file.go"}}}
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":2,"lines":{"text":"match without end"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":3,"lines":{"text":"context without end"}}}

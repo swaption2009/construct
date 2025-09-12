@@ -1,0 +1,5 @@
+{"type":"begin","data":{"path":{"text":"/path/file.go"}}}
+invalid json line here
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":2,"lines":{"text":"valid match"}}}
+{malformed json without closing brace
+{"type":"end","data":{"path":{"text":"/path/file.go"}}}

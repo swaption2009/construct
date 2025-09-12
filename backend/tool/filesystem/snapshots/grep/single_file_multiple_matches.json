@@ -1,0 +1,9 @@
+{"type":"begin","data":{"path":{"text":"/path/file.go"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":1,"lines":{"text":"package main"}}}
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":2,"lines":{"text":"func main() {"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":3,"lines":{"text":"    fmt.Println(\"hello\")"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":4,"lines":{"text":""}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":8,"lines":{"text":"    // another section"}}}
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":9,"lines":{"text":"    fmt.Printf(\"world\")"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":10,"lines":{"text":"}"}}}
+{"type":"end","data":{"path":{"text":"/path/file.go"}}}

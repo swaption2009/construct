@@ -1,0 +1,3 @@
+{"type":"match","data":{"path":{"text":"/path/file.go"},"line_number":2,"lines":{"text":"orphaned match"}}}
+{"type":"context","data":{"path":{"text":"/path/file.go"},"line_number":3,"lines":{"text":"orphaned context"}}}
+{"type":"end","data":{"path":{"text":"/path/file.go"}}}
