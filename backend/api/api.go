@@ -3,8 +3,10 @@ package api
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net"
 	"net/http"
+	"runtime"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -113,6 +115,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiError(err error) error {
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		return err
+	}
+	slog.Error("error in api handler", "error", err, "caller_file", file, "caller_line", line)
+
 	if connect.CodeOf(err) != connect.CodeUnknown {
 		return err
 	}

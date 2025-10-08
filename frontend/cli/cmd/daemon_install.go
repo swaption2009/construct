@@ -344,7 +344,10 @@ func checkConnectionAndSetupStatus(ctx context.Context, out io.Writer, endpoint 
 		out,
 		"Checking connection to daemon",
 		func() (bool, error) {
-			client := api.NewClient(endpoint)
+			client, err := api.NewClient(endpoint)
+			if err != nil {
+				return false, fmt.Errorf("failed to create api client: %w", err)
+			}
 
 			ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			defer cancel()

@@ -68,7 +68,7 @@ func (e *UserFacingError) Error() string {
 	if len(e.HelpURLs) > 0 {
 		msg.WriteString("If the problem persists:\n")
 		for _, url := range e.HelpURLs {
-			msg.WriteString(fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color("75")).SetString("→").Render(), url))
+			msg.WriteString(fmt.Sprintf("%s %s\n", lipgloss.NewStyle().Foreground(lipgloss.Color("75")).Render(("→")), url))
 		}
 	}
 

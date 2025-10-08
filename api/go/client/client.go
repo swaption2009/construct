@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"path/filepath"
 
+	"connectrpc.com/connect"
 	"github.com/furisto/construct/api/go/client/mocks"
 	"github.com/furisto/construct/api/go/v1/v1connect"
-	"connectrpc.com/connect"
 	"go.uber.org/mock/gomock"
 )
 
@@ -23,7 +23,7 @@ type Client struct {
 }
 
 type ClientOptions struct {
-	HTTPClient *http.Client
+	HTTPClient     *http.Client
 	ConnectOptions []connect.ClientOption
 }
 
@@ -41,7 +41,7 @@ func WithConnectOptions(options ...connect.ClientOption) ClientOption {
 	}
 }
 
-func NewClient(endpointContext EndpointContext, options ...ClientOption) *Client {
+func NewClient(endpointContext EndpointContext, options ...ClientOption) (*Client, error) {
 	opts := ClientOptions{
 		HTTPClient: &http.Client{},
 	}
@@ -58,7 +58,10 @@ func NewClient(endpointContext EndpointContext, options ...ClientOption) *Client
 		}
 		baseURL = "http://unix"
 	}
-	baseURL, _ = url.JoinPath(baseURL, "api")
+	baseURL, err := url.JoinPath(baseURL, "api")
+	if err != nil {
+		return nil, fmt.Errorf("invalid base URL %s: %w", baseURL, err)
+	}
 
 	return &Client{
 		modelProvider: v1connect.NewModelProviderServiceClient(opts.HTTPClient, baseURL, opts.ConnectOptions...),
@@ -66,7 +69,7 @@ func NewClient(endpointContext EndpointContext, options ...ClientOption) *Client
 		agent:         v1connect.NewAgentServiceClient(opts.HTTPClient, baseURL, opts.ConnectOptions...),
 		task:          v1connect.NewTaskServiceClient(opts.HTTPClient, baseURL, opts.ConnectOptions...),
 		message:       v1connect.NewMessageServiceClient(opts.HTTPClient, baseURL, opts.ConnectOptions...),
-	}
+	}, nil
 }
 
 func (c *Client) ModelProvider() v1connect.ModelProviderServiceClient {
