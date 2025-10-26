@@ -47,6 +47,7 @@ Returns an object indicating success and details about changes made:
   - To move code: Use two diffs (one to delete from original (empty "new") + one to insert at new location (empty "old"))
   - To delete code: Use empty string for "new" property
 - **File path validation**: Always use absolute paths (starting with "/")
+- **Escape sequences**: You need to ensure that the "old" and "new" text are properly escaped to match the file content exactly e.g if the file contains "Starting Agent Runtime...\\n", you need to ensure that you match that in the old text.
 
 ## When to use
 - Refactoring code (changing variables, updating functions)

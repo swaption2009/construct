@@ -10,7 +10,7 @@ import (
 const printDescription = `
 ## Description
 The print function outputs values from your CodeAct JavaScript program back to you. It serves as a communication channel to display information during code execution, helping with debugging, monitoring program state, and returning computation results.
-Unlike console.log() which writes to the standard output stream, print specifically communicates back to the agent, ensuring the output is visible in the conversation. ALWAYS use print instead of console.log().
+Unlike console.log() which writes to the standard output stream, print specifically communicates back to the agent, ensuring the output is visible in the conversation. ALWAYS use print instead of console.log(). The user will not see the output of print statements, only you will.
 
 ## Parameters
 - **value** (*any*, required): The value to output. Can be any JavaScript value:
@@ -24,6 +24,7 @@ The print function returns undefined. It's used for its side effect of displayin
 
 ## CRITICAL REQUIREMENTS
 - **Always use print instead of console.log()**: Unlike console.log(), print is specifically designed to communicate back to you.
+- **The user will not see the output of print statements, only you will**: You should not use it to communicate results to the user.
 - **Large Data**: Very large objects or strings might be truncated in the output
 - **Performance**: Excessive printing of large objects may impact performance
 - **Complex Objects**: Consider whether you need the entire object printed or just specific properties
