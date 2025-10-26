@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -170,4 +171,34 @@ func setupModelNameLookup(mockClient *api_client.MockClient, modelName, modelID 
 
 func setupDefaultUserInfo(userInfo *mocks.MockUserInfo) {
 	userInfo.EXPECT().ConstructConfigDir().Return("/home/user/.construct", nil).AnyTimes()
+}
+
+// CmpMatcher is a gomock matcher that uses cmp.Equal for comparison
+type CmpMatcher struct {
+	expected interface{}
+	opts     []cmp.Option
+}
+
+// CmpEqual returns a matcher that uses cmp.Equal with the given options
+func CmpEqual(expected interface{}, opts ...cmp.Option) gomock.Matcher {
+	return &CmpMatcher{
+		expected: expected,
+		opts:     opts,
+	}
+}
+
+func (m *CmpMatcher) Matches(actual interface{}) bool {
+	return cmp.Equal(m.expected, actual, m.opts...)
+}
+
+func (m *CmpMatcher) String() string {
+	return fmt.Sprintf("cmp.Equal(%v)", m.expected)
+}
+
+func (m *CmpMatcher) Got(got interface{}) string {
+	diff := cmp.Diff(m.expected, got, m.opts...)
+	if diff == "" {
+		return fmt.Sprintf("%v (matches)", got)
+	}
+	return fmt.Sprintf("%v\ndiff:\n%s", got, diff)
 }

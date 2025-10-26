@@ -109,12 +109,12 @@ func (h *TaskHandler) ListTasks(ctx context.Context, req *connect.Request[v1.Lis
 	}
 
 	if req.Msg.Filter != nil && req.Msg.Filter.TaskIdPrefix != nil {
-		query = query.Where(extension.UUIDHasPrefix(task.FieldID, *req.Msg.Filter.TaskIdPrefix))
+		query = query.Where(extension.UUIDHasPrefix(task.Table, task.FieldID, *req.Msg.Filter.TaskIdPrefix))
 	}
 
 	query.Modify(func(s *sql.Selector) {
-		m := sql.Table(message.Table)
-		countExpr := sql.Count("*")
+		m := sql.Table(message.Table).As("t1")
+		countExpr := sql.Count(m.C(message.FieldTaskID))
 		s.LeftJoin(m).On(s.C(task.FieldID), m.C(message.FieldTaskID))
 		s.AppendSelect(sql.As(countExpr, "messages_count"))
 		s.GroupBy(s.C(task.FieldID))
@@ -287,13 +287,21 @@ func (h *TaskHandler) Subscribe(ctx context.Context, req *connect.Request[v1.Sub
 	return nil
 }
 
+
 func (h *TaskHandler) SuspendTask(ctx context.Context, req *connect.Request[v1.SuspendTaskRequest]) (*connect.Response[v1.SuspendTaskResponse], error) {
 	taskID, err := uuid.Parse(req.Msg.TaskId)
 	if err != nil {
 		return nil, apiError(connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid task ID format: %w", err)))
 	}
 
-	_, err = h.db.Task.UpdateOneID(taskID).SetPhase(types.TaskPhaseSuspended).Save(ctx)
+	_, err = memory.Transaction(ctx, h.db, func(tx *memory.Client) (*memory.Task, error) {
+		_, err = h.db.Task.UpdateOneID(taskID).SetPhase(types.TaskPhaseSuspended).Save(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+
 	if err != nil {
 		return nil, apiError(err)
 	}

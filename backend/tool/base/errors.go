@@ -159,7 +159,11 @@ func NewCustomError(message string, suggestions []string, args ...any) *ToolErro
 		if !ok {
 			key = fmt.Sprintf("arg%d", i)
 		}
-		details[key] = args[i+1]
+		value := args[i+1]
+		if err, ok := value.(error); ok {
+			value = err.Error()
+		}
+		details[key] = value
 	}
 
 	suggestions = append(suggestions, GenericSuggestion)

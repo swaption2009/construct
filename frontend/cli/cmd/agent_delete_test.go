@@ -7,8 +7,10 @@ import (
 	api_client "github.com/furisto/construct/api/go/client"
 	v1 "github.com/furisto/construct/api/go/v1"
 	"github.com/furisto/construct/shared/conv"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestAgentDelete(t *testing.T) {
@@ -159,13 +161,16 @@ func TestAgentDelete(t *testing.T) {
 func setupAgentListMock(mockClient *api_client.MockClient, agentName, agentID string) {
 	mockClient.Agent.EXPECT().ListAgents(
 		gomock.Any(),
-		&connect.Request[v1.ListAgentsRequest]{
+		CmpEqual(&connect.Request[v1.ListAgentsRequest]{
 			Msg: &v1.ListAgentsRequest{
 				Filter: &v1.ListAgentsRequest_Filter{
 					Names: []string{agentName},
 				},
 			},
-		},
+		}, protocmp.Transform(),
+			cmpopts.IgnoreUnexported(connect.Request[v1.ListAgentsRequest]{}),
+			cmpopts.IgnoreFields(v1.ListAgentsRequest{}, "state"),
+		),
 	).Return(&connect.Response[v1.ListAgentsResponse]{
 		Msg: &v1.ListAgentsResponse{
 			Agents: []*v1.Agent{
@@ -185,9 +190,12 @@ func setupAgentListMock(mockClient *api_client.MockClient, agentName, agentID st
 func setupAgentDeletionMock(mockClient *api_client.MockClient, agentID string) {
 	mockClient.Agent.EXPECT().DeleteAgent(
 		gomock.Any(),
-		&connect.Request[v1.DeleteAgentRequest]{
+		CmpEqual(&connect.Request[v1.DeleteAgentRequest]{
 			Msg: &v1.DeleteAgentRequest{Id: agentID},
-		},
+		}, protocmp.Transform(),
+			cmpopts.IgnoreUnexported(connect.Request[v1.DeleteAgentRequest]{}),
+			cmpopts.IgnoreFields(v1.DeleteAgentRequest{}, "state"),
+		),
 	).Return(&connect.Response[v1.DeleteAgentResponse]{
 		Msg: &v1.DeleteAgentResponse{},
 	}, nil)

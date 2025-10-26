@@ -2,7 +2,6 @@ package filesystem
 
 import (
 	"context"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -32,7 +31,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/test.txt",
-					Content: "1: Hello, World!\n2: This is a test file.",
+					Content: "Hello, World!\nThis is a test file.",
 				},
 			},
 		},
@@ -54,7 +53,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/config.json",
-					Content: `1: {"name": "test", "version": "1.0.0"}`,
+					Content: `{"name": "test", "version": "1.0.0"}`,
 				},
 			},
 		},
@@ -65,13 +64,13 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path: "/workspace/src/main.go",
-					Content: `1: package main
-2: 
-3: import "fmt"
-4: 
-5: func main() {
-6: 	fmt.Println("Hello, World!")
-7: }`,
+					Content: `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, World!")
+}`,
 				},
 			},
 		},
@@ -82,7 +81,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/binary.bin",
-					Content: "1: " + string([]byte{0x00, 0x01, 0x02, 0x03, 0xFF}),
+					Content: string([]byte{0x00, 0x01, 0x02, 0x03, 0xFF}),
 				},
 			},
 		},
@@ -117,7 +116,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/special-file_with@symbols.txt",
-					Content: "1: File with special characters in name",
+					Content: "File with special characters in name",
 				},
 			},
 		},
@@ -128,7 +127,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/unicode.txt",
-					Content: "1: Hello 世界! 🌍 Здравствуй мир! ¡Hola mundo!",
+					Content: "Hello 世界! 🌍 Здравствуй мир! ¡Hola mundo!",
 				},
 			},
 		},
@@ -139,7 +138,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/large.txt",
-					Content: strings.TrimRight(generateLargeContent(true), "\n"),
+					Content: strings.TrimRight(generateLargeContent(), "\n"),
 				},
 			},
 		},
@@ -157,9 +156,9 @@ func TestReadFile(t *testing.T) {
 				Result: &ReadFileResult{
 					Path: "/workspace/src/main.go",
 					Content: `// skipped 2 lines
-3: import "fmt"
-4: 
-5: func main() {
+import "fmt"
+
+func main() {
 // 2 lines remaining`,
 				},
 			},
@@ -174,7 +173,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path:    "/workspace/test.txt",
-					Content: "1: Hello, World!\n// 1 lines remaining",
+					Content: "Hello, World!\n// 1 lines remaining",
 				},
 			},
 		},
@@ -189,7 +188,7 @@ func TestReadFile(t *testing.T) {
 				Result: &ReadFileResult{
 					Path: "/workspace/test.txt",
 					Content: `// skipped 1 lines
-2: This is a test file.`,
+This is a test file.`,
 				},
 			},
 		},
@@ -204,7 +203,7 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path: "/workspace/test.txt",
-					Content: `1: Hello, World!
+					Content: `Hello, World!
 // 1 lines remaining`,
 				},
 			},
@@ -221,7 +220,7 @@ func TestReadFile(t *testing.T) {
 				Result: &ReadFileResult{
 					Path: "/workspace/test.txt",
 					Content: `// skipped 1 lines
-2: This is a test file.
+This is a test file.
 // 0 lines remaining`,
 				},
 			},
@@ -237,8 +236,8 @@ func TestReadFile(t *testing.T) {
 			Expected: base.ToolTestExpectation[*ReadFileResult]{
 				Result: &ReadFileResult{
 					Path: "/workspace/test.txt",
-					Content: `1: Hello, World!
-2: This is a test file.
+					Content: `Hello, World!
+This is a test file.
 // 0 lines remaining`,
 				},
 			},
@@ -338,15 +337,12 @@ func main() {
 	afero.WriteFile(fs, "/workspace/binary.bin", []byte{0x00, 0x01, 0x02, 0x03, 0xFF}, 0644)
 	afero.WriteFile(fs, "/workspace/special-file_with@symbols.txt", []byte("File with special characters in name"), 0644)
 	afero.WriteFile(fs, "/workspace/unicode.txt", []byte("Hello 世界! 🌍 Здравствуй мир! ¡Hola mundo!"), 0644)
-	afero.WriteFile(fs, "/workspace/large.txt", []byte(generateLargeContent(false)), 0644)
+	afero.WriteFile(fs, "/workspace/large.txt", []byte(generateLargeContent()), 0644)
 }
 
-func generateLargeContent(lineNumbers bool) string {
+func generateLargeContent() string {
 	content := ""
 	for i := 0; i < 1000; i++ {
-		if lineNumbers {
-			content += strconv.Itoa(i+1) + ": "
-		}
 		content += "This is line " + string(rune(i+'0')) + " of a large file for testing purposes.\n"
 	}
 	return content

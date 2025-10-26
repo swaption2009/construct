@@ -50,12 +50,14 @@ func TestExecuteCommand(t *testing.T) {
 			Name:      "command that fails",
 			TestInput: &ExecuteCommandInput{Command: "false"}, // Command that always fails
 			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
-				Result: &ExecuteCommandResult{
-					Command:  "false",
-					Stdout:   "",
-					Stderr:   "",
-					ExitCode: 1,
+				Error: base.NewCustomError("error executing command", []string{
+					"Check if the command is valid and executable.",
+					"Ensure the command is properly formatted for the target operating system.",
 				},
+					"command", "false",
+					"error", "exit status 1",
+					"output", "",
+				),
 			},
 		},
 		{
@@ -89,19 +91,25 @@ func TestExecuteCommand(t *testing.T) {
 				Error: base.NewCustomError("error executing command", []string{
 					"Check if the command is valid and executable.",
 					"Ensure the command is properly formatted for the target operating system.",
-				}),
+				},
+					"command", "nonexistent_command_xyz_12345",
+					"error", "exit status 127",
+					"output", "/bin/sh: line 2: nonexistent_command_xyz_12345: command not found\n",
+				),
 			},
 		},
 		{
 			Name:      "command with exit code 2",
 			TestInput: &ExecuteCommandInput{Command: "exit 2"},
 			Expected: base.ToolTestExpectation[*ExecuteCommandResult]{
-				Result: &ExecuteCommandResult{
-					Command:  "exit 2",
-					Stdout:   "",
-					Stderr:   "",
-					ExitCode: 2,
+				Error: base.NewCustomError("error executing command", []string{
+					"Check if the command is valid and executable.",
+					"Ensure the command is properly formatted for the target operating system.",
 				},
+					"command", "exit 2",
+					"error", "exit status 2",
+					"output", "",
+				),
 			},
 		},
 		{

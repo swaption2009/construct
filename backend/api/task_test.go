@@ -12,8 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
-	_ "modernc.org/sqlite"
 	"google.golang.org/protobuf/testing/protocmp"
+	_ "modernc.org/sqlite"
 )
 
 func TestCreateTask(t *testing.T) {
@@ -185,13 +185,13 @@ func TestListTasks(t *testing.T) {
 				modelProvider := test.NewModelProviderBuilder(t, uuid.New(), db).Build(ctx)
 				model := test.NewModelBuilder(t, modelID, db, modelProvider).Build(ctx)
 
-			agent1 := test.NewAgentBuilder(t, agentID, db, model).
-				WithName("agent-1").
-				Build(ctx)
-			agent2 := test.NewAgentBuilder(t, uuid.New(), db, model).
-				WithID(uuid.New()).
-				WithName("agent-2").
-				Build(ctx)
+				agent1 := test.NewAgentBuilder(t, agentID, db, model).
+					WithName("agent-1").
+					Build(ctx)
+				agent2 := test.NewAgentBuilder(t, uuid.New(), db, model).
+					WithID(uuid.New()).
+					WithName("agent-2").
+					Build(ctx)
 				test.NewTaskBuilder(t, taskID1, db, agent1).Build(ctx)
 				test.NewTaskBuilder(t, taskID2, db, agent2).Build(ctx)
 			},
@@ -252,7 +252,7 @@ func TestListTasks(t *testing.T) {
 							},
 							Spec: &v1.TaskSpec{
 								AgentId:      strPtr(agentID.String()),
-								DesiredPhase: v1.TaskPhase_TASK_PHASE_AWAITING,
+								DesiredPhase: v1.TaskPhase_TASK_PHASE_RUNNING,
 							},
 							Status: &v1.TaskStatus{
 								Usage: &v1.TaskUsage{},
@@ -265,7 +265,7 @@ func TestListTasks(t *testing.T) {
 							},
 							Spec: &v1.TaskSpec{
 								AgentId:      strPtr(agentID.String()),
-								DesiredPhase: v1.TaskPhase_TASK_PHASE_AWAITING,
+								DesiredPhase: v1.TaskPhase_TASK_PHASE_RUNNING,
 							},
 							Status: &v1.TaskStatus{
 								Usage: &v1.TaskUsage{},
@@ -392,12 +392,12 @@ func TestUpdateTask(t *testing.T) {
 				modelProvider := test.NewModelProviderBuilder(t, uuid.New(), db).Build(ctx)
 				model := test.NewModelBuilder(t, modelID, db, modelProvider).Build(ctx)
 
-			agent1 := test.NewAgentBuilder(t, agentID, db, model).
-				WithName("agent-1").
-				Build(ctx)
-			test.NewAgentBuilder(t, agentID2, db, model).
-				WithName("agent-2").
-				Build(ctx)
+				agent1 := test.NewAgentBuilder(t, agentID, db, model).
+					WithName("agent-1").
+					Build(ctx)
+				test.NewAgentBuilder(t, agentID2, db, model).
+					WithName("agent-2").
+					Build(ctx)
 				test.NewTaskBuilder(t, taskID, db, agent1).Build(ctx)
 			},
 			Request: &v1.UpdateTaskRequest{
