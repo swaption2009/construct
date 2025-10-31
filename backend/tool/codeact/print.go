@@ -9,8 +9,10 @@ import (
 
 const printDescription = `
 ## Description
-The print function outputs values from your CodeAct JavaScript program back to you. It serves as a communication channel to display information during code execution, helping with debugging, monitoring program state, and returning computation results.
-Unlike console.log() which writes to the standard output stream, print specifically communicates back to the agent, ensuring the output is visible in the conversation. ALWAYS use print instead of console.log(). The user will not see the output of print statements, only you will.
+The print function outputs values from your code_interpreter program to you. Unlike console.log() which writes to the standard output stream, 
+print specifically communicates tool results back to the you, meaning it is invisible to the user. ALWAYS use print instead of console.log(). 
+Never use print to display results to the user. To share content with the user, write it directly in your response or use create_file to save it. 
+The results of tool calls in your code_interpreter program will not be visible to you if you do not print them.
 
 ## Parameters
 - **value** (*any*, required): The value to output. Can be any JavaScript value:
