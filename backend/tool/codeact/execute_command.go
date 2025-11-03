@@ -78,6 +78,7 @@ When the user asks you to create a new git commit, follow these steps carefully:
 - Use specific verbs: %[2]sgit add%[2]s (new), %[2]sgit fix%[2]s (bugs), %[2]sgit update%[2]s (enhance existing), %[2]sgit refactor%[2]s, %[2]sgit remove%[2]s
 - Avoid generic terms like "Update" without context
 - Match repository's existing style (capitalization, tense, format)
+- Add yourself as a co-author to the commit message: %[2]sCo-authored-by: construct-agent <noreply@construct.sh>%[2]s
 
 ### Error Handling
 - **No changes**: Show status, suggest staging files
