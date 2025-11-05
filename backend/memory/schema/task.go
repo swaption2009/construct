@@ -28,6 +28,7 @@ func (Task) Fields() []ent.Field {
 		field.Enum("desired_phase").GoType(types.TaskPhase("")).Default(string(types.TaskPhaseRunning)),
 		field.Enum("phase").GoType(types.TaskPhase("")).Default(string(types.TaskPhaseAwaiting)),
 
+		field.String("description").Optional(),
 		field.UUID("agent_id", uuid.UUID{}).Optional(),
 	}
 }

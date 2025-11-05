@@ -41,6 +41,8 @@ const (
 	FieldDesiredPhase = "desired_phase"
 	// FieldPhase holds the string denoting the phase field in the database.
 	FieldPhase = "phase"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldAgentID holds the string denoting the agent_id field in the database.
 	FieldAgentID = "agent_id"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
@@ -80,6 +82,7 @@ var Columns = []string{
 	FieldToolUses,
 	FieldDesiredPhase,
 	FieldPhase,
+	FieldDescription,
 	FieldAgentID,
 }
 
@@ -193,6 +196,11 @@ func ByDesiredPhase(opts ...sql.OrderTermOption) OrderOption {
 // ByPhase orders the results by the phase field.
 func ByPhase(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhase, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByAgentID orders the results by the agent_id field.

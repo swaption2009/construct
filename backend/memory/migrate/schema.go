@@ -166,6 +166,7 @@ var (
 		{Name: "tool_uses", Type: field.TypeJSON},
 		{Name: "desired_phase", Type: field.TypeEnum, Enums: []string{"unspecified", "running", "awaiting", "suspended"}, Default: "running"},
 		{Name: "phase", Type: field.TypeEnum, Enums: []string{"unspecified", "running", "awaiting", "suspended"}, Default: "awaiting"},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "agent_id", Type: field.TypeUUID, Nullable: true},
 	}
 	// TasksTable holds the schema information for the "tasks" table.
@@ -176,7 +177,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "tasks_agents_agent",
-				Columns:    []*schema.Column{TasksColumns[13]},
+				Columns:    []*schema.Column{TasksColumns[14]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

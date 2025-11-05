@@ -249,6 +249,26 @@ func (tu *TaskUpdate) SetNillablePhase(tp *types.TaskPhase) *TaskUpdate {
 	return tu
 }
 
+// SetDescription sets the "description" field.
+func (tu *TaskUpdate) SetDescription(s string) *TaskUpdate {
+	tu.mutation.SetDescription(s)
+	return tu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tu *TaskUpdate) SetNillableDescription(s *string) *TaskUpdate {
+	if s != nil {
+		tu.SetDescription(*s)
+	}
+	return tu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (tu *TaskUpdate) ClearDescription() *TaskUpdate {
+	tu.mutation.ClearDescription()
+	return tu
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tu *TaskUpdate) SetAgentID(u uuid.UUID) *TaskUpdate {
 	tu.mutation.SetAgentID(u)
@@ -458,6 +478,12 @@ func (tu *TaskUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := tu.mutation.Phase(); ok {
 		_spec.SetField(task.FieldPhase, field.TypeEnum, value)
+	}
+	if value, ok := tu.mutation.Description(); ok {
+		_spec.SetField(task.FieldDescription, field.TypeString, value)
+	}
+	if tu.mutation.DescriptionCleared() {
+		_spec.ClearField(task.FieldDescription, field.TypeString)
 	}
 	if tu.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -771,6 +797,26 @@ func (tuo *TaskUpdateOne) SetNillablePhase(tp *types.TaskPhase) *TaskUpdateOne {
 	return tuo
 }
 
+// SetDescription sets the "description" field.
+func (tuo *TaskUpdateOne) SetDescription(s string) *TaskUpdateOne {
+	tuo.mutation.SetDescription(s)
+	return tuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tuo *TaskUpdateOne) SetNillableDescription(s *string) *TaskUpdateOne {
+	if s != nil {
+		tuo.SetDescription(*s)
+	}
+	return tuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (tuo *TaskUpdateOne) ClearDescription() *TaskUpdateOne {
+	tuo.mutation.ClearDescription()
+	return tuo
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tuo *TaskUpdateOne) SetAgentID(u uuid.UUID) *TaskUpdateOne {
 	tuo.mutation.SetAgentID(u)
@@ -1010,6 +1056,12 @@ func (tuo *TaskUpdateOne) sqlSave(ctx context.Context) (_node *Task, err error) 
 	}
 	if value, ok := tuo.mutation.Phase(); ok {
 		_spec.SetField(task.FieldPhase, field.TypeEnum, value)
+	}
+	if value, ok := tuo.mutation.Description(); ok {
+		_spec.SetField(task.FieldDescription, field.TypeString, value)
+	}
+	if tuo.mutation.DescriptionCleared() {
+		_spec.ClearField(task.FieldDescription, field.TypeString)
 	}
 	if tuo.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

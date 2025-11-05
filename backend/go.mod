@@ -24,6 +24,7 @@ require (
 	github.com/spf13/afero v1.14.0
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
 	github.com/zalando/go-keyring v0.2.6
+	golang.org/x/sync v0.17.0
 	google.golang.org/genai v1.21.0
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1
 	google.golang.org/protobuf v1.36.8

@@ -54,10 +54,15 @@ func (h *TaskHandler) CreateTask(ctx context.Context, req *connect.Request[v1.Cr
 			return nil, err
 		}
 
-		return tx.Task.Create().
+		taskCreate := tx.Task.Create().
 			SetAgentID(agentID).
-			SetProjectDirectory(req.Msg.ProjectDirectory).
-			Save(ctx)
+			SetProjectDirectory(req.Msg.ProjectDirectory)
+
+		if req.Msg.Description != "" {
+			taskCreate = taskCreate.SetDescription(req.Msg.Description)
+		}
+
+		return taskCreate.Save(ctx)
 	})
 
 	if err != nil {

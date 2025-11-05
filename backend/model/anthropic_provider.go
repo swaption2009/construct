@@ -23,6 +23,8 @@ type AnthropicProvider struct {
 	metrics        *prometheus.Registry
 }
 
+var _ ModelProvider = (*AnthropicProvider)(nil)
+
 func NewAnthropicProvider(apiKey string, opts ...ProviderOption) (*AnthropicProvider, error) {
 	if apiKey == "" {
 		return nil, fmt.Errorf("anthropic API key is required")
@@ -324,6 +326,14 @@ func (p *AnthropicProvider) validateInput(model, systemPrompt string, messages [
 	}
 
 	return nil
+}
+
+func (p *AnthropicProvider) DefaultModel() string {
+	return AnthropicDefaultModel
+}
+
+func (p *AnthropicProvider) BudgetModel() string {
+	return AnthropicBudgetModel
 }
 
 func NewAnthropicProviderError(kind ProviderErrorKind, err error) *ProviderError {

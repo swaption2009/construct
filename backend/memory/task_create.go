@@ -184,6 +184,20 @@ func (tc *TaskCreate) SetNillablePhase(tp *types.TaskPhase) *TaskCreate {
 	return tc
 }
 
+// SetDescription sets the "description" field.
+func (tc *TaskCreate) SetDescription(s string) *TaskCreate {
+	tc.mutation.SetDescription(s)
+	return tc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (tc *TaskCreate) SetNillableDescription(s *string) *TaskCreate {
+	if s != nil {
+		tc.SetDescription(*s)
+	}
+	return tc
+}
+
 // SetAgentID sets the "agent_id" field.
 func (tc *TaskCreate) SetAgentID(u uuid.UUID) *TaskCreate {
 	tc.mutation.SetAgentID(u)
@@ -409,6 +423,10 @@ func (tc *TaskCreate) createSpec() (*Task, *sqlgraph.CreateSpec) {
 	if value, ok := tc.mutation.Phase(); ok {
 		_spec.SetField(task.FieldPhase, field.TypeEnum, value)
 		_node.Phase = value
+	}
+	if value, ok := tc.mutation.Description(); ok {
+		_spec.SetField(task.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := tc.mutation.MessagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

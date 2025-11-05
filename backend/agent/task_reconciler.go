@@ -27,6 +27,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/afero"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -62,6 +63,7 @@ type TaskReconciler struct {
 	providerFactory *ModelProviderFactory
 	concurrency     int
 	runningTasks    *SyncMap[uuid.UUID, context.CancelFunc]
+	titleGenGroup   singleflight.Group
 	wg              sync.WaitGroup
 }
 
@@ -198,6 +200,11 @@ func (r *TaskReconciler) reconcile(ctx context.Context, taskID uuid.UUID) (Resul
 		All(ctx)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to fetch messages: %w", err)
+	}
+
+	// Trigger title generation if needed
+	if shouldGenerateTitle(task, messages) {
+		go r.generateTitleAsync(taskID)
 	}
 
 	status, err := r.computeStatus(task, messages)
@@ -744,4 +751,28 @@ func (r *TaskReconciler) setTaskPhaseAndPublish(ctx context.Context, taskID uuid
 	}
 
 	r.publishTaskEvent(taskID)
+}
+
+func shouldGenerateTitle(task *memory.Task, messages []*memory.Message) bool {
+	if task.Description != "" {
+		return false
+	}
+
+	if !hasUserMessage(messages) {
+		return false
+	}
+
+	return true
+}
+
+func (r *TaskReconciler) generateTitleAsync(taskID uuid.UUID) {
+	_, err, _ := r.titleGenGroup.Do(taskID.String(), func() (interface{}, error) {
+		ctx := context.Background()
+		generator := NewTitleGenerator(r.memory, r.providerFactory)
+		return nil, generator.GenerateTitle(ctx, taskID)
+	})
+
+	if err != nil {
+		slog.Error("failed to generate title", "error", err, "task_id", taskID)
+	}
 }

@@ -24,12 +24,13 @@ func NewTaskCmd() *cobra.Command {
 }
 
 type DisplayTask struct {
-	Id        string           `json:"id" yaml:"id" detail:"default"`
-	AgentId   string           `json:"agent_id" yaml:"agent_id" detail:"default"`
-	Workspace string           `json:"workspace" yaml:"workspace" detail:"default"`
-	CreatedAt time.Time        `json:"created_at" yaml:"created_at"`
-	UpdatedAt time.Time        `json:"updated_at" yaml:"updated_at"`
-	Usage     DisplayTaskUsage `json:"usage" yaml:"usage"`
+	Id          string           `json:"id" yaml:"id" detail:"default"`
+	Description string           `json:"description,omitempty" yaml:"description,omitempty" detail:"default"`
+	AgentId     string           `json:"agent_id" yaml:"agent_id" detail:"default"`
+	Workspace   string           `json:"workspace" yaml:"workspace" detail:"default"`
+	CreatedAt   time.Time        `json:"created_at" yaml:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at" yaml:"updated_at"`
+	Usage       DisplayTaskUsage `json:"usage" yaml:"usage"`
 }
 
 type DisplayTaskUsage struct {
@@ -48,12 +49,13 @@ func ConvertTaskToDisplay(task *v1.Task) *DisplayTask {
 	}
 
 	return &DisplayTask{
-		Id:        task.Metadata.Id,
-		AgentId:   PtrToString(task.Spec.AgentId),
-		Workspace: task.Spec.Workspace,
-		Usage:     usage,
-		CreatedAt: task.Metadata.CreatedAt.AsTime(),
-		UpdatedAt: task.Metadata.UpdatedAt.AsTime(),
+		Id:          task.Metadata.Id,
+		Description: task.Spec.Description,
+		AgentId:     PtrToString(task.Spec.AgentId),
+		Workspace:   task.Spec.Workspace,
+		Usage:       usage,
+		CreatedAt:   task.Metadata.CreatedAt.AsTime(),
+		UpdatedAt:   task.Metadata.UpdatedAt.AsTime(),
 	}
 }
 

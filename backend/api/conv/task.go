@@ -32,6 +32,7 @@ func ConvertTaskSpecToProto(t *memory.Task) (*v1.TaskSpec, error) {
 		AgentId:      strPtr(t.AgentID.String()),
 		Workspace:    t.ProjectDirectory,
 		DesiredPhase: ConvertTaskPhaseToProto(t.DesiredPhase),
+		Description:  t.Description,
 	}, nil
 }
 

@@ -8,6 +8,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	AnthropicBudgetModel  = "claude-haiku-4-5-20251001"
+	AnthropicDefaultModel = "claude-sonnet-4-5-20250929"
+)
+
 func SupportedAnthropicModels() []Model {
 	return []Model{
 		{

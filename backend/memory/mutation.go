@@ -4114,6 +4114,7 @@ type TaskMutation struct {
 	tool_uses             *map[string]int64
 	desired_phase         *types.TaskPhase
 	phase                 *types.TaskPhase
+	description           *string
 	clearedFields         map[string]struct{}
 	messages              map[uuid.UUID]struct{}
 	removedmessages       map[uuid.UUID]struct{}
@@ -4864,6 +4865,55 @@ func (m *TaskMutation) ResetPhase() {
 	m.phase = nil
 }
 
+// SetDescription sets the "description" field.
+func (m *TaskMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TaskMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Task entity.
+// If the Task object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaskMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TaskMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[task.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TaskMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[task.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TaskMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, task.FieldDescription)
+}
+
 // SetAgentID sets the "agent_id" field.
 func (m *TaskMutation) SetAgentID(u uuid.UUID) {
 	m.agent = &u
@@ -5028,7 +5078,7 @@ func (m *TaskMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TaskMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.create_time != nil {
 		fields = append(fields, task.FieldCreateTime)
 	}
@@ -5065,6 +5115,9 @@ func (m *TaskMutation) Fields() []string {
 	if m.phase != nil {
 		fields = append(fields, task.FieldPhase)
 	}
+	if m.description != nil {
+		fields = append(fields, task.FieldDescription)
+	}
 	if m.agent != nil {
 		fields = append(fields, task.FieldAgentID)
 	}
@@ -5100,6 +5153,8 @@ func (m *TaskMutation) Field(name string) (ent.Value, bool) {
 		return m.DesiredPhase()
 	case task.FieldPhase:
 		return m.Phase()
+	case task.FieldDescription:
+		return m.Description()
 	case task.FieldAgentID:
 		return m.AgentID()
 	}
@@ -5135,6 +5190,8 @@ func (m *TaskMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDesiredPhase(ctx)
 	case task.FieldPhase:
 		return m.OldPhase(ctx)
+	case task.FieldDescription:
+		return m.OldDescription(ctx)
 	case task.FieldAgentID:
 		return m.OldAgentID(ctx)
 	}
@@ -5229,6 +5286,13 @@ func (m *TaskMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPhase(v)
+		return nil
+	case task.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case task.FieldAgentID:
 		v, ok := value.(uuid.UUID)
@@ -5360,6 +5424,9 @@ func (m *TaskMutation) ClearedFields() []string {
 	if m.FieldCleared(task.FieldCost) {
 		fields = append(fields, task.FieldCost)
 	}
+	if m.FieldCleared(task.FieldDescription) {
+		fields = append(fields, task.FieldDescription)
+	}
 	if m.FieldCleared(task.FieldAgentID) {
 		fields = append(fields, task.FieldAgentID)
 	}
@@ -5394,6 +5461,9 @@ func (m *TaskMutation) ClearField(name string) error {
 		return nil
 	case task.FieldCost:
 		m.ClearCost()
+		return nil
+	case task.FieldDescription:
+		m.ClearDescription()
 		return nil
 	case task.FieldAgentID:
 		m.ClearAgentID()
@@ -5441,6 +5511,9 @@ func (m *TaskMutation) ResetField(name string) error {
 		return nil
 	case task.FieldPhase:
 		m.ResetPhase()
+		return nil
+	case task.FieldDescription:
+		m.ResetDescription()
 		return nil
 	case task.FieldAgentID:
 		m.ResetAgentID()
