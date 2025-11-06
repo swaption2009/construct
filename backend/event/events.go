@@ -8,6 +8,12 @@ type TaskEvent struct {
 
 func (TaskEvent) Event() {}
 
+type TaskSuspendedEvent struct {
+	TaskID uuid.UUID
+}
+
+func (TaskSuspendedEvent) Event() {}
+
 type MessageEvent struct {
 	MessageID uuid.UUID
 	TaskID    uuid.UUID

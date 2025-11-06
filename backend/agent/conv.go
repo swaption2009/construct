@@ -581,6 +581,8 @@ func ConvertMemoryMessageToProto(m *memory.Message) (*v1.Message, error) {
 			InputTokens:      m.Usage.InputTokens,
 			OutputTokens:     m.Usage.OutputTokens,
 			CacheWriteTokens: m.Usage.CacheWriteTokens,
+			CacheReadTokens:  m.Usage.CacheReadTokens,
+			Cost:             m.Usage.Cost,
 		}
 	}
 

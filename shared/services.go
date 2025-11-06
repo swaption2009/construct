@@ -199,7 +199,7 @@ func (u *DefaultUserInfo) ConstructLogDir() (string, error) {
 	default:
 		logDir = filepath.Join(xdg.StateHome, "construct")
 	}
-	
+
 	if err := u.fs.MkdirAll(logDir, 0700); err != nil {
 		return "", fmt.Errorf("failed to create log directory: %w", err)
 	}

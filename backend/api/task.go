@@ -310,7 +310,7 @@ func (h *TaskHandler) SuspendTask(ctx context.Context, req *connect.Request[v1.S
 		return nil, apiError(err)
 	}
 
-	event.Publish(h.eventBus, event.TaskEvent{
+	event.Publish(h.eventBus, event.TaskSuspendedEvent{
 		TaskID: taskID,
 	})
 	return connect.NewResponse(&v1.SuspendTaskResponse{}), nil

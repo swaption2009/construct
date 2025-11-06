@@ -47,6 +47,13 @@ func (h *MessageHandler) CreateMessage(ctx context.Context, req *connect.Request
 			return nil, err
 		}
 
+		if task.DesiredPhase == types.TaskPhaseSuspended {
+			_, err = tx.Task.UpdateOneID(taskID).SetDesiredPhase(types.TaskPhaseRunning).Save(ctx)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		return tx.Message.Create().
 			SetTask(task).
 			SetContent(conv.ConvertProtoContentToMemory(req.Msg.Content)).

@@ -103,12 +103,20 @@ func (r *TaskReconciler) Run(ctx context.Context) error {
 		}()
 	}
 
-	sub := event.Subscribe(r.bus, func(ctx context.Context, e event.TaskEvent) {
+	taskEventSub := event.Subscribe(r.bus, func(ctx context.Context, e event.TaskEvent) {
 		r.queue.Add(e.TaskID)
 	}, nil)
 
+	taskSuspendedEventSub := event.Subscribe(r.bus, func(ctx context.Context, e event.TaskSuspendedEvent) {
+		cancel, ok := r.runningTasks.Get(e.TaskID)
+		if ok {
+			cancel()
+		}
+	}, nil)
+
 	<-ctx.Done()
-	sub.Unsubscribe()
+	taskEventSub.Unsubscribe()
+	taskSuspendedEventSub.Unsubscribe()
 
 	r.queue.ShutDownWithDrain()
 
@@ -202,7 +210,6 @@ func (r *TaskReconciler) reconcile(ctx context.Context, taskID uuid.UUID) (Resul
 		return Result{}, fmt.Errorf("failed to fetch messages: %w", err)
 	}
 
-	// Trigger title generation if needed
 	if shouldGenerateTitle(task, messages) {
 		go r.generateTitleAsync(taskID)
 	}
@@ -256,7 +263,7 @@ func (r *TaskReconciler) fetchTaskWithAgent(ctx context.Context, taskID uuid.UUI
 
 // computeStatus analyzes the message history and determines what action to take
 func (r *TaskReconciler) computeStatus(task *memory.Task, messages []*memory.Message) (*TaskStatus, error) {
-	if task.Phase == types.TaskPhaseSuspended {
+	if task.DesiredPhase == types.TaskPhaseSuspended {
 		return &TaskStatus{Phase: TaskPhaseSuspended}, nil
 	}
 
