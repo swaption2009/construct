@@ -47,7 +47,8 @@ func NewTaskListCmd() *cobra.Command {
 
 			req := &connect.Request[v1.ListTasksRequest]{
 				Msg: &v1.ListTasksRequest{
-					Filter: filter,
+					Filter:   filter,
+					PageSize: &options.Limit,
 				},
 			}
 
