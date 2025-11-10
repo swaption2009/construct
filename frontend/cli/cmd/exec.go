@@ -357,7 +357,7 @@ func formatTextMessage(message *v1.Message, cmd *cobra.Command) error {
 	for _, part := range message.Spec.Content {
 		switch partData := part.Data.(type) {
 		case *v1.MessagePart_Text_:
-			cmd.Println(partData.Text.Content)
+			fmt.Fprintln(cmd.OutOrStdout(), partData.Text.Content)
 		}
 	}
 	return nil
