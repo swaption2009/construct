@@ -1,13 +1,10 @@
-name: Release
+name: Test Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., v1.0.0)'
+        description: 'Test version (e.g., v1.0.0-test)'
         required: true
         type: string
 
@@ -15,7 +12,7 @@ env:
   GO_VERSION: '1.24.1'
 
 jobs:
-  release:
+  test-release:
     runs-on: ubuntu-latest
     environment: Release
     permissions:
@@ -30,12 +27,12 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: "1.24"
-      - name: Run GoReleaser
+      - name: Run GoReleaser (Snapshot)
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: "~> v2"
-          args: release --clean
+          args: release --snapshot --skip=publish
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GH_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
