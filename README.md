@@ -164,7 +164,7 @@ sudo mv construct /usr/local/bin/
 ### Setup
 
 ```bash
-# 1. Install daemon
+# 1. Install daemon (or run manually: construct daemon run --listen-unix /tmp/construct.sock)
 construct daemon install
 
 # 2. Configure provider (Anthropic example)
