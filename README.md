@@ -134,30 +134,6 @@ construct agent create reviewer \
 - **Flexible deployment**: Local daemon, remote server, or your own infrastructure
 - **Open source**: Inspect the code, self-host, no vendor lock-in
 
-## Architecture
-
-Construct follows a daemon-based, client-server architecture designed for extensibility and programmatic access:
-
-```mermaid
-graph TD
-    CLI[CLI Client] -->|HTTP/2| API[API Layer<br/>ConnectRPC]
-    Custom[Custom Clients] -.->|HTTP/2| API
-    API --> TR[Task Reconciler]
-    TR --> INT[CodeAct Interpreter<br/>Sobek VM]
-    TR --> Provider[Model Providers<br/>Anthropic/OpenAI/etc]
-    TR --> DB[(SQLite Database)]
-    INT --> Tools[Tool Execution<br/>read_file, edit_file, grep, etc]
-```
-
-**Key components:**
-- **Daemon**: Background service managing agent execution, state, and coordination
-- **ConnectRPC API**: HTTP/2-based RPC exposing all operations via Protocol Buffers
-- **Task Reconciler**: Orchestrates conversation flows between models and tool execution
-- **CodeAct Interpreter**: Executes JavaScript-based tool calls in sandboxed environment
-- **Storage**: SQLite database for persisting all state
-
-See [Architecture Documentation](docs/architecture.md) for detailed technical deep dive.
-
 ## Quick Start
 
 > [!WARNING]
@@ -268,6 +244,30 @@ construct message list --task <task-id> -o json
 # Configure defaults
 construct config set cmd.new.agent "coder"
 ```
+
+## Architecture
+
+Construct follows a daemon-based, client-server architecture designed for extensibility and programmatic access:
+
+```mermaid
+graph TD
+    CLI[CLI Client] -->|HTTP/2| API[API Layer<br/>ConnectRPC]
+    Custom[Custom Clients] -.->|HTTP/2| API
+    API --> TR[Task Reconciler]
+    TR --> INT[CodeAct Interpreter<br/>Sobek VM]
+    TR --> Provider[Model Providers<br/>Anthropic/OpenAI/etc]
+    TR --> DB[(SQLite Database)]
+    INT --> Tools[Tool Execution<br/>read_file, edit_file, grep, etc]
+```
+
+**Key components:**
+- **Daemon**: Background service managing agent execution, state, and coordination
+- **ConnectRPC API**: HTTP/2-based RPC exposing all operations via Protocol Buffers
+- **Task Reconciler**: Orchestrates conversation flows between models and tool execution
+- **CodeAct Interpreter**: Executes JavaScript-based tool calls in sandboxed environment
+- **Storage**: SQLite database for persisting all state
+
+See [Architecture Documentation](docs/architecture.md) for detailed technical deep dive.
 
 ## Roadmap
 
