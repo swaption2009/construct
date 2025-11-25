@@ -26,7 +26,7 @@ Most AI coding tools lock you into their interface and workflows. Construct is b
 Construct is an open-source AI coding assistant with an API-first architecture. Everything—agents, tasks, conversations, tool calls—is accessible programmatically. The CLI is just one client of the daemon's ConnectRPC API.
 
 <p align="center">
-  <img src="docs/images/demo.gif" alt="Construct Demo" width="800">
+  <img src="docs/demo/full.gif" alt="Construct Demo" width="800">
 </p>
 
 ## Key Features
